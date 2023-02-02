@@ -1,4 +1,4 @@
-This directory contains functions to spectral disentangling.
+<h1 align="center"> BiSpeD </h1>
 
-Version 0.1 - August 29th, 2022
-# BiSpeD
+>The Binary Spectral Disentangling (**BiSpeD**) was developed in PYTHON with special focus on processing-based parallelism. This architecture allows us to compute different mass ratios among binary companions simultaneously.
+ 
