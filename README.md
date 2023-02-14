@@ -1,11 +1,11 @@
 <h1 align="center"> BiSpeD </h1>
 
-The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON code for astronomy spectroscopy application.
+The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON code for astronomy applications. The code can find and extract the spectral behaviours of secondary companion from a binary system observation.
 
 
  ## Introduction
 
-The BiSpeD code allows us to compute different mass ratios among companions (q-values) simultaneously, according to the computing resources. The spectral features of primary component (S<sub>A</sub>) are removed form observed spectra (S<sub>obs</sub>), and for each possible $q$-value defined by the user, a spectrum associated with secondary companion is made (S<sub>B</sub>). Finally, the code compares each S<sub>B</sub> spectrum with a synthetic templates catalogue to find the best match for mass ratio $q$ and secondary effective temperature T<sub>eff</sub>. Eventually, the BiSpeD code works through specific functions (tasks) with particular aims. In the next Subsections we present the main functions of BiSpeD available for the users with mandatory and optional arguments.
+The BiSpeD code allows to estimate the mass ratio among companions (q-value). The spectral features of primary component (S<sub>A</sub>) are removed form observed spectra (S<sub>obs</sub>), and for each possible q-values defined by the user, a residual spectrum associated with secondary companion is made (S<sub>B</sub>). Finally, the code compares each S<sub>B</sub> spectrum with a synthetic templates catalogue to find the best match for mass ratio q and secondary effective temperature T<sub>eff</sub>. Eventually, the BiSpeD code works through specific functions (tasks) with particular aims. In the next topics, the main functions of BiSpeD with mandatory and optional arguments are presented.
 
 ## Installation
 
