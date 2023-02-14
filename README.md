@@ -1,6 +1,6 @@
 <h1 align="center"> BiSpeD </h1>
 
-The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON code for astronomy applications. The code can find and extract the spectral behaviours of secondary companion from a binary system observation.
+The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON code for astronomy applications. The code can find and extract the spectral features of secondary companion from a binary system observation.
 
 
  ## Introduction
