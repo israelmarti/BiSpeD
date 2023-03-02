@@ -161,7 +161,7 @@ def help(function):
 ################################################################
 def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.01, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900',nproc=6):
     plt.ion()
-    print('\n\tRunning FIND2C (v0.1)\n')
+    print('\n\tRunning FIND2C\n')
     VerifyWarning('ignore')
     larch=makelist(lis)
     if lit[len(lit)-1] == '/':
