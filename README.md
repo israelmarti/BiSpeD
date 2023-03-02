@@ -25,7 +25,7 @@ BiSpeD requires the next libraries to run:
 - Specutils (https://specutils.readthedocs.io)
 - SciPy (https://scipy.org)
 - Numba (https://numba.pydata.org)
-- Multiprocessing (https://docs.python.org)
+- Multiprocessing (https://docs.python.org/3/library/multiprocessing.html)
 
 
 ## Main Functions
