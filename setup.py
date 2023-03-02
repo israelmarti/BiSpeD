@@ -1,13 +1,13 @@
 from distutils.core import setup
 setup(
   name = 'bisped',
-  packages = ['bisped'], # this must be the same as the name above
+  packages = ['bisped'], 
   version = '1.01',
   description = 'Python script for binary spectroscopic disentangling',
   author = 'Cristian I. Martinez',
   author_email = 'cmartinez@conicet.gov.ar',
-  url = 'https://github.com/israelmarti/BiSpeD', # use the URL to the github repo
-  download_url = 'https://github.com/israelmarti/BiSpeD/tarball/0.1', # I'll explain this in a second
-  keywords = ['astronomy', 'spectroscopy'], # arbitrary keywords
+  url = 'https://github.com/israelmarti/BiSpeD', # URL to the github repository
+  download_url = 'https://github.com/israelmarti/BiSpeD/tarball/1.01', 
+  keywords = ['astronomy', 'spectroscopy'], # keywords
   classifiers = [],
 )
