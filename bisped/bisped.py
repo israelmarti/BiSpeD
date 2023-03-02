@@ -180,7 +180,7 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     time.sleep(1)
     pres = [chk.get() for chk in pres]
     pool.terminate()
-    print('\nDone!\n')
+    print('\nProcess completed successfully!\n')
     print('')
     #create fading mask
     dlist=[]
@@ -756,7 +756,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
     else:
         nrd=len(str(step))-str(step).find('.')-1
     plt.ion()
-    print('\n\t  Running VGRID (v0.1)\n')
+    print('\n\t  Running VGRID\n')
     VerifyWarning('ignore')
     larch=makelist(lis)
     if lit[len(lit)-1] == '/':
@@ -1042,6 +1042,7 @@ def qparallel(q_array,lis,larch,spa,spb,deltaq,vgamma):
         aux2 = os.path.isfile(spb+aux1+'.fits')
         if aux2==False:
             spbina(lis, spa=spa+aux1, spb=spb+aux1, nit=1,q=xq,vgamma=vgamma,showtit=False)
+            #print(spb+aux1+' done!')
 
 def makelist(lis):
     aux1=lis.find('@')
@@ -1357,7 +1358,7 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
             plt.show()
             if yours == 'y' or yours == 'Y':
                 fsave = True
-                print('\nDone!\n')
+                print('\nProcess completed successfully!\n')
                 plt.close()
                 break
             elif yours == 'q' or yours == 'Q':
@@ -1366,7 +1367,7 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
                 break
         else:
             fsave = True
-            print('\nDone!\n')
+            print('\nProcess completed successfully!\n')
             break
     return xrv, err_g1, fsave
 
