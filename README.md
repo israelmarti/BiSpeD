@@ -17,7 +17,7 @@ pip install bisped
 
 ## Libraries
 
-BiSpeD requires the next libraries to run:
+BiSpeD requires the latest versions of the next libraries:
 - Numpy (https://www.numpy.org)
 - Astropy (https://www.astropy.org)
 - Matplotlib (https://matplotlib.org)
