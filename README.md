@@ -18,16 +18,15 @@ pip install bisped
 ## Libraries
 
 BiSpeD requires the the next libraries to run:
-- Astropy_ >= 5.0.4
-- Matplotlib_ >= 3.7.0
-- Multiprocessing_ >= 2.6.2.1
-- Numba_ >= 0.56.4
-- Numpy_  >= 1.23.5
-- Progress_ >= 1.5
-- PyAstronomy_ >= 0.18.1
-- SciPy_ >= 1.10.1
-- Specutils_ >= 1.3.1
-This is [an example](http://example.com/ "Title") inline link.
+- [Astropy](https://www.astropy.org) >= 5.0.4
+- [Matplotlib](https://matplotlib.org) >= 3.7.0
+- [Multiprocessing](https://pypi.org/project/multiprocessing) >= 2.6.2.1
+- [Numba](https://numba.pydata.org) >= 0.56.4
+- [Numpy](https://www.numpy.org)  >= 1.23.5
+- [Progress](https://pypi.org/project/progress) >= 1.5
+- [PyAstronomy](https://pyastronomy.readthedocs.io) >= 0.18.1
+- [SciPy](https://scipy.org) >= 1.10.1
+- [Specutils](https://specutils.readthedocs.io) >= 1.3.1
 
 ## Main Functions
 
@@ -125,14 +124,3 @@ This is [an example](http://example.com/ "Title") inline link.
 - **vexplore**
 > Show and explore results for systemic radial velocities grid analysis (only for **vgrid** task). The mandatory parameter `obj` is the folder output name obtained from **vgrid** task. The different cross-correlation analysis results for the systemic velocities grid can be checked with a interactive 3-D graphic.
 
-
-
-.. _Numpy: https://www.numpy.org
-.. _Astropy: https://www.astropy.org
-.. _Matplotlib: https://matplotlib.org
-.. _PyAstronomy: https://pyastronomy.readthedocs.io
-.. _Specutils: https://specutils.readthedocs.io
-.. _SciPy: https://scipy.org
-.. _Numba: https://numba.pydata.org
-.. _Multiprocessing: https://pypi.org/project/multiprocessing
-.. _Progress: https://pypi.org/project/progress
