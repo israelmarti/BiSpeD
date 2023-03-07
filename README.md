@@ -17,16 +17,16 @@ pip install bisped
 
 ## Libraries
 
-BiSpeD requires the latest versions of the next libraries:
-- Numpy (https://www.numpy.org)
-- Astropy (https://www.astropy.org)
-- Matplotlib (https://matplotlib.org)
-- PyAstronomy (https://pyastronomy.readthedocs.io)
-- Specutils (https://specutils.readthedocs.io)
-- SciPy (https://scipy.org)
-- Numba (https://numba.pydata.org)
-- Multiprocessing (https://pypi.org/project/multiprocessing/)
-- Progress (https://pypi.org/project/progress/)
+BiSpeD requires the the next libraries to run:
+- Astropy_ >= 5.0.4
+- Matplotlib_ >= 3.7.0
+- Multiprocessing_ >= 2.6.2.1
+- Numba_ >= 0.56.4
+- Numpy_  >= 1.23.5
+- Progress_ >= 1.5
+- PyAstronomy_ >= 0.18.1
+- SciPy_ >= 1.10.1
+- Specutils_ >= 1.3.1
 
 
 ## Main Functions
@@ -124,3 +124,15 @@ BiSpeD requires the latest versions of the next libraries:
 
 - **vexplore**
 > Show and explore results for systemic radial velocities grid analysis (only for **vgrid** task). The mandatory parameter `obj` is the folder output name obtained from **vgrid** task. The different cross-correlation analysis results for the systemic velocities grid can be checked with a interactive 3-D graphic.
+
+
+
+.. _Numpy: https://www.numpy.org
+.. _Astropy: https://www.astropy.org
+.. _Matplotlib: https://matplotlib.org
+.. _PyAstronomy: https://pyastronomy.readthedocs.io
+.. _Specutils: https://specutils.readthedocs.io
+.. _SciPy: https://scipy.org
+.. _Numba: https://numba.pydata.org
+.. _Multiprocessing: https://pypi.org/project/multiprocessing
+.. _Progress: https://pypi.org/project/progress
