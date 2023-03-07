@@ -27,7 +27,7 @@ BiSpeD requires the the next libraries to run:
 - PyAstronomy_ >= 0.18.1
 - SciPy_ >= 1.10.1
 - Specutils_ >= 1.3.1
-
+This is [an example](http://example.com/ "Title") inline link.
 
 ## Main Functions
 
