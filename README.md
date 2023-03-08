@@ -50,7 +50,7 @@ BiSpeD requires the the next dependencies to run:
 > 
 > Example:
 ```python3
-find2c('@lista','/home/user/templates',wreg='4000-4320,4360-4850,4875-5900',nproc=8)
+find2c('@lista', '/home/user/templates', wreg='4000-4320,4360-4850,4875-5900', nproc=8)
 ```
 
 - **hselect**
@@ -58,7 +58,7 @@ find2c('@lista','/home/user/templates',wreg='4000-4320,4360-4850,4875-5900',npro
 > 
 > Example:
 ```python3
-hselect('@lista','object')
+hselect('@lista', 'object')
 ```
 
 - **rvbina**
@@ -78,7 +78,7 @@ hselect('@lista','object')
 > 
 > Example:
 ```python3
-rvbina('@lista',spa='sp_A',spb='sp_B',wreg='3550-4700,4850-5680',keyjd='HJD',fitcont=True)
+rvbina('@lista', spa='sp_A', spb='sp_B', wreg='3550-4700,4850-5680', keyjd='HJD', fitcont=True)
 ```
 
 - **rvextract**
@@ -101,7 +101,7 @@ rvextract('@lista', output='file_RVs.txt', graph=True)
 > 
 > Example:
 ```python3
-setrvs('@lista',ta='/home/user/templates/04800-4.50.fits',interac=True)
+setrvs('@lista', ta='/home/user/templates/04800-4.50.fits', interac=True)
 ```
 
 - **spbina**
@@ -119,12 +119,12 @@ setrvs('@lista',ta='/home/user/templates/04800-4.50.fits',interac=True)
 > 
 > Example for binary type SB2:
 ```python3
-setrvs('@lista',nit=10,frat=0.67,interac=True)
+setrvs('@lista', nit=10, frat=0.67, interac=True)
 ```
 > 
 > Example for binary type SB1 (radial velocity for secondary companion unknown with determined mass ratio `q`):
 ```python3
-setrvs('@lista',nit=10,frat=0.67,q=0.81,vgamma=2.1,interac=True)
+setrvs('@lista', nit=10, frat=0.67, q=0.81, vgamma=2.1, interac=True)
 ```
 
 - **splot**
@@ -138,9 +138,21 @@ setrvs('@lista',nit=10,frat=0.67,q=0.81,vgamma=2.1,interac=True)
 > - `markpix`: mark dispersion pixel values (boolean);  
 > - `newfig`: open spectrum in a new window (boolean);
 > - `color`: spectrum graphic color (see **matplotlib.pyplot** for colors availables, string variable type).
+> 
+> Example for show three spectra in same figure:
+```python3
+setrvs('2023-01-05_2350.fits', xmin=3215, xmax=5500)
+setrvs('2022-10-14_0220.fits', xmin=3215, xmax=5500, newfig=False, color='blue')
+setrvs('2022-08-22_0310.fits', xmin=3215, xmax=5500, newfig=False, color='green')
+```
 
 - **uniform**
 > Explore a spectra data-set (if interactive mode is active, given by the optional parameter `interac=True`) and select the bests spectra to process. Finally, this task scales each spectrum from selected data-set to a mean continuum factor to make them morphologically consistent. The mandatory parameter is `lis` (string) for the file list of observed spectra to process; and optional parameter is interactive mode `interac` (boolean). 
+> 
+> Example for interactive mode useful:
+```python3
+uniform('@lista',interac=True)
+```
 
 - **vgrid**
 > When the orbital period for primary RV values could not be fitting and the systemic velocity is unknown, the task `vgrid` can be applied to estimate the best systemic radial velocity of binary system through a systemic velocities grid around the most probable value. 
@@ -156,7 +168,16 @@ setrvs('@lista',nit=10,frat=0.67,q=0.81,vgamma=2.1,interac=True)
 > - `deltaq`: mass increments for cross-correlation grid (float);
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regiones joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
 > - `nproc`: number of CPU cores to use in computing; it depends of computer resources (integer).
+>
+> Example:
+```python3
+vgrid('@lista', '/home/user/templates', svmin=4.6, svmax=8.1, step=0.2, qmin=0.1, qmax=0.45, nproc=8)
+```
 
 - **vexplore**
-> Show and explore results for systemic radial velocities grid analysis (only for **vgrid** task). The mandatory parameter `obj` (string) is the folder output name obtained from **vgrid** task. The different cross-correlation analysis results for the systemic velocities grid can be checked with a interactive 3-D graphic.
-
+> Show and explore results for systemic radial velocities grid analysis (only for previously **vgrid** task running). The mandatory parameter `folder` (string) is the folder output name obtained from **vgrid** task. The different cross-correlation analysis results for the systemic velocities grid can be checked with a interactive 3-D graphic.
+>
+> Example:
+```python3
+vexplore('output_00/')
+```
