@@ -7,7 +7,7 @@ setup(
   author = 'Cristian I. Martinez',
   author_email = 'cmartinez@conicet.gov.ar',
   url = 'https://github.com/israelmarti/BiSpeD', # URL to the github repository
-  download_url = 'https://github.com/israelmarti/BiSpeD/tarball/1.01', 
+  download_url = 'https://github.com/israelmarti/BiSpeD/tarball/v1.01', 
   keywords = ['astronomy', 'spectroscopy'], # keywords
   classifiers = [],
 )
