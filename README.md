@@ -50,7 +50,7 @@ BiSpeD requires the the next dependencies to run:
 > 
 > Example:
 ```python3
-find2c('@lista', '/home/user/templates',wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900')
+find2c('@lista','/home/user/templates',wreg='4000-4320,4360-4850,4875-5900')
 ```
 
 - **hselect**
@@ -70,11 +70,16 @@ hselect('@lista','object')
 > - `spb`: name of secondary component mean spectrum (string);
 > - `ta`: spectrum template, in FITS format with or without extension, for comparison with primary component (string);
 > - `tb`: spectrum template, in FITS format with or without extension, for comparison with secondary component (string);
-> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regiones joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
+> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regiones joined with ' " , ";
 > - `aconv`: damping convergence factor (float);
 > - `keyjd`: header keyword that contains Julian Date (string);
 > - `fitcont`: continuum subtraction of spectra dataset prior to correlation analysis (boolean);
 > - `interac`: process cross-correlation interactively (boolean).
+> 
+> Example:
+```python3
+rvbina('@lista',spa='sp_A',spb='sp_B',wreg='3550-4700,4850-5680',keyjd='HJD',fitcont=True)
+```
 
 - **rvextract**
 > Analyze the convergence of iterative **rvbina** task for a spectra file list (mandatory parameter `lis`, string viariable type). The optional parameters are `output` (string) to write a file with RV values and `graphic` (boolean) to show the RV convergence as a function of iteration number.
