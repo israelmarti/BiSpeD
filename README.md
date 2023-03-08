@@ -50,7 +50,7 @@ BiSpeD requires the the next dependencies to run:
 > 
 > Example:
 ```python3
-find2c('@lista','/home/user/templates',wreg='4000-4320,4360-4850,4875-5900')
+find2c('@lista','/home/user/templates',wreg='4000-4320,4360-4850,4875-5900',nproc=8)
 ```
 
 - **hselect**
@@ -83,6 +83,11 @@ rvbina('@lista',spa='sp_A',spb='sp_B',wreg='3550-4700,4850-5680',keyjd='HJD',fit
 
 - **rvextract**
 > Analyze the convergence of iterative **rvbina** task for a spectra file list (mandatory parameter `lis`, string viariable type). The optional parameters are `output` (string) to write a file with RV values and `graphic` (boolean) to show the RV convergence as a function of iteration number.
+> 
+> Example:
+```python3
+rvextract('@lista', output='file_RVs.txt', graph=True)
+```
 
 - **setrvs**
 > Set radial velocities for each spectrum from data-set using cross-correlation with templates defined by the user. This task can be applied for SB1 and SB2 binary system; in case of double-line stars, the parameter `tb` must be assigned to a template according to possible secondary spectral type. The only mandatory parameter is spectra file list `lis` (string). 
@@ -93,6 +98,11 @@ rvbina('@lista',spa='sp_A',spb='sp_B',wreg='3550-4700,4850-5680',keyjd='HJD',fit
 > - `keyjd`: header keyword that contains Julian Date (string);
 > - `fitcont`: continuum subtraction of spectra dataset prior to correlation analysis (boolean);
 > - `interac`: process cross-correlation interactively (boolean).
+> 
+> Example:
+```python3
+setrvs('@lista',ta='/home/user/templates/04800-4.50.fits',interac=True)
+```
 
 - **spbina**
 > Compute spectral disentangling. The only mandatory parameter is spectra file list `lis` (string).
@@ -106,6 +116,16 @@ rvbina('@lista',spa='sp_A',spb='sp_B',wreg='3550-4700,4850-5680',keyjd='HJD',fit
 > - `vgamma`: estimated value for systemic radial velocity in km/s (float);
 > - `obspha`: calculate spectra for all phases (boolean);
 > - `showtit`: enable user interface (boolean).
+> 
+> Example for binary type SB2:
+```python3
+setrvs('@lista',nit=10,frat=0.67,interac=True)
+```
+> 
+> Example for binary type SB1 (radial velocity for secondary companion unknown with determined mass ratio `q`):
+```python3
+setrvs('@lista',nit=10,frat=0.67,q=0.81,vgamma=2.1,interac=True)
+```
 
 - **splot**
 > Plot and show spectrum (must be in FITS format). The mandatory parameter is the file name `file` (string).
