@@ -16,9 +16,9 @@ pip install bisped
 ```
 For optimized interactive usefull run from [IPython](https://ipython.org/install.html).
 
-## Libraries
+## Dependencies
 
-BiSpeD requires the the next libraries to run:
+BiSpeD requires the the next dependencies to run:
 - [Astropy](https://www.astropy.org) >= 5.0.4
 - [Matplotlib](https://matplotlib.org) >= 3.7.0
 - [Multiprocessing](https://pypi.org/project/multiprocessing) >= 2.6.2.1
