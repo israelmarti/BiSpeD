@@ -39,6 +39,7 @@ BiSpeD requires the the next dependencies to run:
 > - `lis`: file list of observed spectra to process. The file list is a text file containing a list of spectra images for input (in FITS format). The IRAF terminology to specify this kind of file as the form "at file" is applied and it means the file name must be preceded by the symbol @. The easiest way to generate the file list is using the LINUX command **ls** (string);
 > - `tmp`: full path to the folder containing spectra templates (string);
 > - `vgamma`: estimated value for systemic radial velocity in km/s (float).
+> 
 > Optional parameters:
 > - `spa`: output name of primary component mean spectrum (string);
 > - `spb`: output name of secondary component mean spectrum (string);
