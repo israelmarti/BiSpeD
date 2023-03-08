@@ -47,6 +47,7 @@ BiSpeD requires the the next dependencies to run:
 > - `deltaq`: mass increments for cross-correlation grid (float);
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regiones joined with ' " , ";
 > - `nproc`: number of CPU cores to use in computing; it depends of computer resources (integer).
+> 
 > Example:
 ```
 find2c('@lista', '/home/user/templates',vgamma=2.1,qmin=0.2,qmax=0.9,deltaq=0.01,wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900',nproc=8)
