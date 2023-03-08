@@ -49,12 +49,17 @@ BiSpeD requires the the next dependencies to run:
 > - `nproc`: number of CPU cores to use in computing; it depends of computer resources (integer).
 > 
 > Example:
-```
-find2c('@lista', '/home/user/templates',vgamma=2.1,qmin=0.2,qmax=0.9,deltaq=0.01,wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900',nproc=8)
+```python3
+find2c('@lista', '/home/user/templates',wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900')
 ```
 
 - **hselect**
 > Extract keyword values (`fields`, string viariable type) from a FITS image or file list (`img`, string viariable type). In case of file list, the file name must be preceded by the symbol @.
+> 
+> Example:
+```python3
+hselect('@lista','object')
+```
 
 - **rvbina**
 > This task computes the cross-correlation of radial velocities among two spectra using the Fast Fourier Transform method (FFT) to perform the convolution. The output is the full discrete linear convolution of the inputs showed in a dispersion grid defined by spectral region parameter ´wreg´. It requires the previously estimation of primary and secondary mean spectra. First, the primary RV is determined by cross-correlation among observed spectrum and template; then the mean primary spectra features are removed from observed spectra and the secondary RV determination is carry out. The cross-correlation result is fitted for the most significative peak with a Gaussian fitting.
