@@ -141,9 +141,9 @@ setrvs('@lista', nit=10, frat=0.67, q=0.81, vgamma=2.1, interac=True)
 > 
 > Example for show three spectra in same figure:
 ```python3
-setrvs('2023-01-05_2350.fits', xmin=3215, xmax=5500)
-setrvs('2022-10-14_0220.fits', xmin=3215, xmax=5500, newfig=False, color='blue')
-setrvs('2022-08-22_0310.fits', xmin=3215, xmax=5500, newfig=False, color='green')
+splot('2023-01-05_2350.fits', xmin=3215, xmax=5500)
+splot('2022-10-14_0220.fits', xmin=3215, xmax=5500, newfig=False, color='blue')
+splot('2022-08-22_0310.fits', xmin=3215, xmax=5500, newfig=False, color='green')
 ```
 
 - **uniform**
