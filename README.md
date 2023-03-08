@@ -154,6 +154,14 @@ splot('2022-08-22_0310.fits', xmin=3215, xmax=5500, newfig=False, color='green')
 uniform('@lista',interac=True)
 ```
 
+- **vexplore**
+> Show and explore results for systemic radial velocities grid analysis (only for previously **vgrid** task running). The mandatory parameter `folder` (string) is the folder output name obtained from **vgrid** task. The different cross-correlation analysis results for the systemic velocities grid can be checked with a interactive 3-D graphic.
+>
+> Example:
+```python3
+vexplore('output_00/')
+```
+
 - **vgrid**
 > When the orbital period for primary RV values could not be fitting and the systemic velocity is unknown, the task `vgrid` can be applied to estimate the best systemic radial velocity of binary system through a systemic velocities grid around the most probable value. 
 >Mandatory parameters:
@@ -172,12 +180,4 @@ uniform('@lista',interac=True)
 > Example:
 ```python3
 vgrid('@lista', '/home/user/templates', svmin=4.6, svmax=8.1, step=0.2, qmin=0.1, qmax=0.45, nproc=8)
-```
-
-- **vexplore**
-> Show and explore results for systemic radial velocities grid analysis (only for previously **vgrid** task running). The mandatory parameter `folder` (string) is the folder output name obtained from **vgrid** task. The different cross-correlation analysis results for the systemic velocities grid can be checked with a interactive 3-D graphic.
->
-> Example:
-```python3
-vexplore('output_00/')
 ```
