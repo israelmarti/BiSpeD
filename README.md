@@ -9,7 +9,7 @@ The BiSpeD code allows to estimate the mass ratio among companions (*q*-value). 
 
 ## Installation
 
-BiSpeD is distributed on PyPI as a universal wheel and is available on Linux/macOS and Windows and supports Python 3.5+.
+BiSpeD is distributed on PyPI as a universal wheel and is available on Linux/macOS and Windows and supports Python 3.6, 3.8 and 3.10.
 
 ```bash
 pip install bisped
@@ -18,7 +18,7 @@ For optimized interactive usefull run from [IPython](https://ipython.org/install
 
 ## Dependencies
 
-BiSpeD requires the the next dependencies to run (python <=3.10):
+BiSpeD requires the the next dependencies to run:
 - [Astropy](https://www.astropy.org) >= 5.0.4
 - [Matplotlib](https://matplotlib.org) >= 3.7.0
 - [Numba](https://numba.pydata.org) >= 0.56.4
