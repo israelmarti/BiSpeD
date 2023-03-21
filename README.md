@@ -21,7 +21,6 @@ For optimized interactive usefull run from [IPython](https://ipython.org/install
 BiSpeD requires the the next dependencies to run:
 - [Astropy](https://www.astropy.org) >= 5.0.4
 - [Matplotlib](https://matplotlib.org) >= 3.7.0
-- [Multiprocessing](https://pypi.org/project/multiprocessing) >= 2.6.2.1
 - [Numba](https://numba.pydata.org) >= 0.56.4
 - [Numpy](https://www.numpy.org)  >= 1.23.5
 - [Progress](https://pypi.org/project/progress) >= 1.5
