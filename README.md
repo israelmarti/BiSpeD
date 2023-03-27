@@ -1,6 +1,6 @@
 <h1 align="center"> BiSpeD </h1>
 
-The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy applications. The package includes tasks to manipulate and processing spectral observations of binary stars; the main goal of this development is to finds and extracts the spectral features of secondary companion star.
+The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy applications. The package includes tasks to manipulate and process spectral observations of binary stars; the main goal of this development is finds and extracts the spectral features of the secondary companion star.
 
 
  ## Introduction
@@ -33,9 +33,9 @@ BiSpeD requires the the next dependencies to run:
 - **find2c**
 
 > This task can detect the best possible solution of mass ratio and effective temperature of the secondary companion in a single-lined spectroscopic binary, for a given spectra dataset.
-> As the radial velocity (*RV*) for a secondary companion is unknown (single-line spectroscopic binary), a grid of different possible mass ratios (*q*) must be defined. The script uses the *RV* of the primary component to estimate the *RV*-value of the secondary component. For each mass ratio *q* the script uses de RV of the primary, and a spectral disentangling technique is applied using the task `spbina` and a mean spectrum corresponding to secondary companion is obtanied. `find2c` convolves the mean spectrum with a synthetic template spectra list provided by the user. The reconstructed secondary spectra are correlated against synthetic templates of different temperatures. The cross-correlation function (CCF) maximum is used to evaluate the different values of cross-correlation for each *q* and each effective temperature *T<sub>eff</sub>* are obtained. Each CCF value corresponds to the best synthetic template and this could be analyzed in a 3D density diagram, where X-axis is the mass ratio and Y-axis the effective temperature. 
+> As the radial velocity (*RV*) for a secondary companion is unknown (single-line spectroscopic binary), a grid of different possible mass ratios (*q*) must be defined. The script uses the *RV* of the primary component to estimate the *RV*-value of the secondary component. For each mass ratio *q* the script uses de RV of the primary, and a spectral disentangling technique is applied using the task `spbina`, and a mean spectrum corresponding to the secondary companion is obtained. `find2c` convolves the mean spectrum with a synthetic template spectra list provided by the user. The reconstructed secondary spectra are correlated against synthetic templates of different temperatures. The cross-correlation function (CCF) maximum is used to evaluate the different values of cross-correlation for each *q* and each effective temperature *T<sub>eff</sub>*. Each CCF value corresponds to the best synthetic template and this could be analyzed in a 3D density diagram, where X-axis is the mass ratio and Y-axis is the effective temperature. 
 > Mandatory parameters:
-> - `lis`: file list of observed spectra to process. The file list is a text file containing a list of spectra images for input (in FITS format). The IRAF terminology to specify this kind of file as the form "at file" is applied and it means the file name must be preceded by the symbol @. The easiest way to generate the file list is using the LINUX command **ls** (string);
+> - `lis`: file list of observed spectra to process. The file list is a text file containing a list of spectra images for input (in FITS extension). The IRAF terminology to specify this kind of file as the form "at file" is applied and it means the file name must be preceded by the symbol @. The easiest way to generate the file list is using the LINUX command **ls** (string);
 > - `tmp`: full path to the folder containing spectra templates (string);
 > - `vgamma`: estimated value for systemic radial velocity in km/s (float).
 > 
@@ -45,8 +45,8 @@ BiSpeD requires the the next dependencies to run:
 > - `qmin`: minimum mass ratio for cross-correlation grid (float);
 > - `qmax`: maximum mass ratio for cross-correlation grid (float);    
 > - `deltaq`: mass increments for cross-correlation grid (float);
-> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regiones joined with ' " , ";
-> - `nproc`: number of CPU cores to use in computing; it depends of computer resources (integer).
+> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regions joined with ' " , ";
+> - `nproc`: number of parallel processes to use in computing; it depends on computer resources (integer).
 > 
 > Example:
 ```python3
@@ -54,7 +54,7 @@ find2c('@lista', '/home/user/templates', wreg='4000-4320,4360-4850,4875-5900', n
 ```
 
 - **hselect**
-> Extract keyword values (`fields`, string viariable type) from a FITS image or file list (`img`, string viariable type). In case of file list, the file name must be preceded by the symbol @.
+> Extract keyword values (`fields`, string viariable type) from a FITS image or file list (`img`, string viariable type). In the case of a file list, the file name must be preceded by the symbol @.
 > 
 > Example:
 ```python3
@@ -68,8 +68,8 @@ hselect('@lista', 'object')
 > Optional parameters:
 > - `spa`: name of primary component mean spectrum (string);
 > - `spb`: name of secondary component mean spectrum (string);
-> - `ta`: spectrum template, in FITS format with or without extension, for comparison with primary component (string);
-> - `tb`: spectrum template, in FITS format with or without extension, for comparison with secondary component (string);
+> - `ta`: spectrum template, in FITS extension with or without extension, for comparison with primary component (string);
+> - `tb`: spectrum template, in FITS extension with or without extension, for comparison with secondary component (string);
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regiones joined with ' " , ";
 > - `aconv`: damping convergence factor (float);
 > - `keyjd`: header keyword that contains Julian Date (string);
@@ -92,8 +92,8 @@ rvextract('@lista', output='file_RVs.txt', graph=True)
 - **setrvs**
 > Measurement of radial velocities for each spectrum from data-set using cross-correlation with templates defined by the user. This task can be applied for SB1 and SB2 binary system; in case of double-line stars, the template for secondary companion star must also be provided. The only mandatory parameter is spectra file list `lis` (string). 
 > Optional parameters:
-> - `ta`: spectrum template, in FITS format with or without extension, for comparison with primary component (string);
-> - `tb`: spectrum template, in FITS format with or without extension, for comparison with secondary component (string);
+> - `ta`: spectrum template, in FITS extension with or without extension, for comparison with primary component (string);
+> - `tb`: spectrum template, in FITS extension with or without extension, for comparison with secondary component (string);
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regiones joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
 > - `keyjd`: header keyword that contains Julian Date (string);
 > - `fitcont`: continuum subtraction of spectra dataset prior to correlation analysis (boolean);
@@ -128,7 +128,7 @@ setrvs('@lista', nit=10, frat=0.67, q=0.81, vgamma=2.1, interac=True)
 ```
 
 - **splot**
-> Plot and show spectrum (must be in FITS format). The mandatory parameter is the file spectrum name `file` (string).
+> Plot and show spectrum (must be in FITS extension). The mandatory parameter is the file spectrum name `file` (string).
 > Optional parameters:
 > - `xmin`: lower wavelength limit for graphic (float);
 > - `xmax`: upper wavelength limit for graphic (float);
