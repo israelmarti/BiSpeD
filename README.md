@@ -62,7 +62,7 @@ hselect('@lista', 'object')
 ```
 
 - **rvbina**
-> This task computes the cross-correlation of radial velocities between two spectra using the Fast Fourier Transform method (FFT) to perform the convolution. The output is the full discrete linear convolution of the inputs showed in a dispersion grid defined on the the spectral region of ´wreg´. It requires the previously estimation of primary and secondary mean spectra. First, the primary RV is determined by cross-correlation among observed spectrum and an estimated template for primary component; then the mean spectroscopic features are removed from observed spectra and the secondary RV determination is carry out. The cross-correlation function is fitted for the most significative peak with a Gaussian fitting.
+> This task computes the cross-correlation of radial velocities between two spectra using the Fast Fourier Transform method (FFT) to perform the convolution. The output is the full discrete linear convolution of the inputs showed in a dispersion grid defined on the spectral region of ´wreg´. It requires the previous estimation of primary and secondary mean spectra. First, the primary RV is determined by cross-correlation among observed spectrum and an estimated template for primary component; then the mean spectroscopic features are removed from observed spectra and the secondary RV determination is carry out. The cross-correlation function is fitted for the most significative peak with a Gaussian function.
 > Mandatory parameters:
 > - `lis` (string): file list of observed spectra to process. The file name must be preceded by the symbol @.
 > Optional parameters:
