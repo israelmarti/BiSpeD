@@ -179,7 +179,7 @@ vexplore('output_00/')
 > - `qmax`: maximum mass ratio for cross-correlation grid (float);     
 > - `deltaq`: mass increments for cross-correlation grid (float);
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regiones joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
-> - `nproc`: number of CPU cores to use in computing; it depends of computer resources (integer).
+> - `nproc`: number of parallel processes to use in computing, it depends on computer resources (integer).
 >
 > Example:
 ```python3
