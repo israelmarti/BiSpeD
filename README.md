@@ -159,7 +159,7 @@ uniform('@lista',interac=True)
 ```
 
 - **vexplore**
-> Show and explore results for systemic radial velocities grid analysis (only for previously **vgrid** task running). The mandatory parameter `folder` (string) is the folder output name obtained from **vgrid** task. The different cross-correlation analysis results for the systemic velocities grid can be checked with a interactive 3-D graphic.
+> Show and explore results for systemic radial velocities grid analysis (only for previously **vgrid** task running). The mandatory parameter `folder` (string) is the folder output name obtained from **vgrid** task. The different cross-correlation analysis results for the systemic velocities grid can be checked with an interactive 3-D graphic.
 >
 > Example:
 ```python3
