@@ -34,6 +34,7 @@ BiSpeD requires the the next dependencies to run:
 
 > This task can detect the best possible solution of mass ratio and effective temperature of the secondary companion in a single-lined spectroscopic binary, for a given spectra dataset.
 > As the radial velocity (*RV*) for a secondary companion is unknown (single-line spectroscopic binary), a grid of different possible mass ratios (*q*) must be defined. The script uses the *RV* of the primary component to estimate the *RV*-value of the secondary component. For each mass ratio *q* the script uses de RV of the primary, and a spectral disentangling technique is applied using the task `spbina`, and a mean spectrum corresponding to the secondary companion is obtained. `find2c` convolves the mean spectrum with a synthetic template spectra list provided by the user. The reconstructed secondary spectra are correlated against synthetic templates of different temperatures. The cross-correlation function (CCF) maximum is used to evaluate the different values of cross-correlation for each *q* and each effective temperature *T<sub>eff</sub>*. Each CCF value corresponds to the best synthetic template and this could be analyzed in a 3D density diagram, where X-axis is the mass ratio and Y-axis is the effective temperature. 
+> 
 > Mandatory parameters:
 > - `lis`: file list of observed spectra to process. The file list is a text file containing a list of spectra images for input (in FITS extension). The IRAF terminology to specify this kind of file as the form "at file" is applied and it means the file name must be preceded by the symbol @. The easiest way to generate the file list is using the LINUX command **ls** (string);
 > - `tmp`: full path to the folder containing spectra templates (string);
@@ -63,13 +64,15 @@ hselect('@lista', 'object')
 
 - **rvbina**
 > This task computes the cross-correlation of radial velocities between two spectra using the Fast Fourier Transform method (FFT) to perform the convolution. The output is the full discrete linear convolution of the inputs showed in a dispersion grid defined on the spectral region of ´wreg´. It requires the previous estimation of primary and secondary mean spectra. First, the primary RV is determined by cross-correlation among observed spectrum and an estimated template for primary component; then the mean spectroscopic features are removed from observed spectra and the secondary RV determination is carry out. The cross-correlation function is fitted for the most significative peak with a Gaussian function.
+> 
 > Mandatory parameters:
 > - `lis` (string): file list of observed spectra to process. The file name must be preceded by the symbol @.
-> Optional parameters:
 > - `spa`: name of primary component mean spectrum (string);
 > - `spb`: name of secondary component mean spectrum (string);
 > - `ta`: spectrum template, in FITS extension with or without extension, for comparison with primary component (string);
 > - `tb`: spectrum template, in FITS extension with or without extension, for comparison with secondary component (string);
+> 
+> Optional parameters:
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regiones joined with ' " , ";
 > - `aconv`: damping convergence factor (float);
 > - `keyjd`: header keyword that contains Julian Date (string);
@@ -90,7 +93,8 @@ rvextract('@lista', output='file_RVs.txt', graph=True)
 ```
 
 - **setrvs**
-> Measurement of radial velocities for each spectrum from data-set using cross-correlation with templates defined by the user. This task can be applied for SB1 and SB2 binary system; in case of double-line stars, the template for secondary companion star must also be provided. The only mandatory parameter is spectra file list `lis` (string). 
+> Measurement of radial velocities for each spectrum from the dataset using cross-correlation with templates defined by the user. This task can be applied for SB1 and SB2 binary systems; in the case of double-line stars, the template of the secondary companion star must also be provided. The only mandatory parameter is spectra file list `lis` (string).
+>  
 > Optional parameters:
 > - `ta`: spectrum template, in FITS extension with or without extension, for comparison with primary component (string);
 > - `tb`: spectrum template, in FITS extension with or without extension, for comparison with secondary component (string);
@@ -110,9 +114,9 @@ setrvs('@lista', ta='/home/user/templates/04800-4.50.fits', interac=True)
 > - `spa`: name of primary component mean spectrum (string);
 > - `spb`: name of secondary component mean spectrum (string);
 > - `nit`: number of iterations (integer);
-> - `frat`: estimated flux ratio among components (float);
+> - `frat`: estimated flux ratio between components (float);
 > - `reject`: reject pixels using a sigma clipping algorithm (boolean);
-> - `q`: mass ratio among components (if the RV of secondary component is unknown, float variable type);
+> - `q`: mass ratio among components (if the RV of the secondary component is unknown, float variable type);
 > - `vgamma`: estimated value for systemic radial velocity in km/s (float);
 > - `obspha`: calculate spectra for all phases (boolean);
 > - `showtit`: enable user interface (boolean).
@@ -147,7 +151,7 @@ splot('2022-08-22_0310.fits', xmin=3215, xmax=5500, newfig=False, color='green')
 ```
 
 - **uniform**
-> Explore a spectra data-set (if interactive mode is active, given by the optional parameter `interac=True`) and select the bests spectra to process. Finally, this task scales each spectrum from selected data-set to a mean continuum factor to make them morphologically consistent. The mandatory parameter is `lis` (string) for the file list of observed spectra to process; and optional parameter is interactive mode `interac` (boolean). 
+> Explore a spectra dataset (if the interactive mode is active, given by the optional parameter `interac=True`) and select the bests spectra to process. Finally, this task scales each spectrum from the selected dataset to a mean continuum factor to make them morphologically consistent. The mandatory parameter is `lis` (string) for the file list of observed spectra to process; and the optional parameter is interactive mode `interac` (boolean). 
 > 
 > Example for interactive mode useful:
 ```python3
@@ -163,7 +167,7 @@ vexplore('output_00/')
 ```
 
 - **vgrid**
-> When the orbital period for primary RV values cannot be derived from the primary RVs, and the systemic velocity is unknown, the task `vgrid` can be applied to estimate the best systemic radial velocity of binary system through a systemic velocities grid around the most probable value. 
+> When the orbital period for primary RV values cannot be derived from the primary RVs, and the systemic velocity is unknown, the task `vgrid` can be applied to estimate the best systemic radial velocity of the binary system through systemic velocities grid around the most probable value. 
 >Mandatory parameters:
 > - `lis`: file list of observed spectra to process (string);
 > - `tmp`: full path to the folder containing spectra templates (string);
