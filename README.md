@@ -18,15 +18,15 @@ For optimized interactive usefull run from [IPython](https://ipython.org/install
 
 ## Dependencies
 
-BiSpeD requires the the next dependencies to run:
-- [Astropy](https://www.astropy.org) >= 5.0.4
-- [Matplotlib](https://matplotlib.org) >= 3.7.0
-- [Numba](https://numba.pydata.org) >= 0.56.4
-- [Numpy](https://www.numpy.org)  >= 1.23.5
-- [Progress](https://pypi.org/project/progress) >= 1.5
-- [PyAstronomy](https://pyastronomy.readthedocs.io) >= 0.18.1
-- [SciPy](https://scipy.org) >= 1.10.1
-- [Specutils](https://specutils.readthedocs.io) >= 1.3.1
+BiSpeD requires the latest dependencies for Python 3.10 (for 3.6 and 3.8 install these versions):
+- [Astropy](https://www.astropy.org) (v5.0.4)
+- [Matplotlib](https://matplotlib.org) (v3.7.0)
+- [Numba](https://numba.pydata.org) (v0.56.4)
+- [Numpy](https://www.numpy.org)  (v1.23.5)
+- [Progress](https://pypi.org/project/progress) (v1.5)
+- [PyAstronomy](https://pyastronomy.readthedocs.io) (v0.18.1)
+- [SciPy](https://scipy.org) (v1.10.1)
+- [Specutils](https://specutils.readthedocs.io) (v1.3.1)
 
 ## Main Functions
 
