@@ -173,12 +173,10 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     pool=Pool(processes=nproc)
     qa2=np.array_split(q_array,nproc)
     pres=[pool.apply_async(qparallel, args= [chk,lis,larch,spa,spb,deltaq,vgamma]) for chk in qa2]
-    time.sleep(1)
-    pool.close()
-    pool.join()
-    time.sleep(1)
+    #pool.close()
+    #pool.join()
     pres = [chk.get() for chk in pres]
-    pool.terminate()
+    #pool.terminate()
     print('\nProcess completed successfully!\n')
     print('')
     #create fading mask
@@ -209,13 +207,14 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     for j,xq in enumerate(q_array):
         aux1=str(round(xq,len(str(deltaq+1))-2)).replace('.','')
         wimg,fimg = pyasl.read1dFitsSpec(spb+aux1+'.fits')
-        spec_cont=continuum(wimg, fimg, type='diff',lo=2.5,hi=3.5, graph=False)
+        spec_cont=continuum(wimg, fimg, type='diff', nit=5, lo=2.5,hi=3.5, graph=False)
         aux_img = Spectrum1D(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
         aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
         matrix_sq[j] = splineclean(aux2_img.flux.value)*fmask
         bar1.next()
     bar1.finish()
     print('')
+    norma_b=np.max(np.mean(matrix_sq**2,axis=1))
     #Cross correlation between each spectrum and B//q
     vector_t=np.zeros(len(ltemp))
     matrix_cc=np.zeros(shape=(len(ltemp),len(q_array)))
@@ -226,15 +225,14 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
         vector_t[k]=teff
         htmp.close(output_verify='ignore')
         wt1,ft1 = pyasl.read1dFitsSpec(tmp)
-        temp_cont = continuum(wt1, ft1, type='diff', lo=2.5,hi=6, graph=False)
+        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
         aux_tmp1 = Spectrum1D(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
         template1=splineclean(aux2_tmp1.flux.value*fmask)
         tt=np.mean(template1**2)
         for l,xq in enumerate(q_array):
-            bb=np.mean(matrix_sq[l]**2)
             tb=np.mean((template1*matrix_sq[l]))
-            cc=tb/(np.sqrt(bb)*np.sqrt(tt))
+            cc=tb/(np.sqrt(norma_b)*np.sqrt(tt))
             matrix_cc[k,l]=cc
         bar2.next()
     #save matrix_cc in FITS format
@@ -304,7 +302,7 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     plt.setp(ax2.get_yticklabels(), visible=False)
     ax2.plot(vector_t,tmed,marker='',ls='-', color='red')
     ax2.set_xlabel("Temp. [1000 K]", fontsize=9)
-    ax2.set(xlim=(2300, 8400))
+    ax2.set(xlim=(vector_t[0], vector_t[-1]))
     plt.axvline(x=vector_t[jt2], color='black', linestyle='--',linewidth=1)
     plt.subplots_adjust(top=1.0,bottom=0.207,left=0.06,right=0.995,hspace=0.25,wspace=0.02)
     aux4 = os.path.isfile(obj1+'_qT.jpeg')
@@ -568,7 +566,7 @@ def setrvs(lis, ta='templateA', tb=None, wreg='4000-4090,4110-4320,4360-4850,487
 ################################################################
 ################################################################
 ################################################################
-def spbina(lis, spa='A', spb='B', nit=5, frat=1.0, reject=True,q=None,vgamma=None,obspha=False,showtit=True):
+def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=None,obspha=False,showtit=True):
     if showtit:
         print('')
         print('\t  Running SPBINA')
@@ -582,13 +580,9 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=1.0, reject=True,q=None,vgamma=Non
     xwmin=[]
     xwmax=[]
     for i in range(nimg):
-        hx = fits.open(larch[i], 'update')
-        xdel = hx[0].header['CDELT1']
-        xw0 = hx[0].header['CRVAL1']
-        xn = hx[0].header['NAXIS1']
-        xw1=xw0+xdel*(xn-1)
-        xwmin.append(xw0)
-        xwmax.append(xw1)
+        wbusq,dumm2 = pyasl.read1dFitsSpec(larch[i])
+        xwmin.append(wbusq[0])
+        xwmax.append(wbusq[-1])
     new_disp_grid=np.arange(np.max(xwmin),np.min(xwmax),delta)
     nwvl = len(new_disp_grid)
     baux1 = os.path.isfile(spb+'.fits')
@@ -608,7 +602,7 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=1.0, reject=True,q=None,vgamma=Non
         f_mean = np.zeros(nwvl)
         for i in range(nwvl):
             f_mean[i] = np.mean(tmp_matrix[:,i])
-        f_cont = continuum(new_disp_grid, f_mean,type='fit',graph=False)
+        f_cont = continuum(new_disp_grid, f_mean, order=10, nit=10,type='fit',graph=False)
         f_cont=splineclean(f_cont)
         B = f_cont* fb
     else:
@@ -799,7 +793,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
         vector_t[k]=teff
         htmp.close(output_verify='ignore')
         wt1,ft1 = pyasl.read1dFitsSpec(tmp)
-        temp_cont = continuum(wt1, ft1, type='diff', lo=2.5,hi=6, graph=False)
+        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
         aux_tmp1 = Spectrum1D(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
         template1=splineclean(aux2_tmp1.flux.value*fmask)
@@ -840,11 +834,11 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
             aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
             matrix_sq[j] = splineclean(aux2_img.flux.value)*fmask
         #Load calculated tt values from templates
+        norma_b=np.max(np.mean(matrix_sq**2,axis=1))
         for k,tt in enumerate(tt_array):
             for l,xq in enumerate(q_array):
-                bb=np.mean(matrix_sq[l]**2)
                 tb=np.mean(matrix_tmp[k]*matrix_sq[l])
-                cc=tb/(np.sqrt(bb)*np.sqrt(tt))
+                cc=tb/(np.sqrt(norma_b)*np.sqrt(tt))
                 matrix_cc[k,l]=cc
         bar0.next()
         #save matrix_cc in FITS file
@@ -882,9 +876,13 @@ def uniform(lis,interac=True):
     #Calculate mean spectrum
     hobs = fits.open(larch[0], 'update')
     dx= hobs[0].header['CDELT1']
-    wx1 = hobs[0].header['CRVAL1']
-    wx2 = hobs[0].header['CRVAL1'] + dx *(hobs[0].header['NAXIS1']-1)    
-    new_disp_grid=np.arange(wx1-50,wx2+50,dx)
+    xwmin=[]
+    xwmax=[]
+    for i,imin in enumerate(larch):
+        wbusq,dumm2 = pyasl.read1dFitsSpec(imin)
+        xwmin.append(wbusq[0])
+        xwmax.append(wbusq[-1])
+    new_disp_grid=np.arange(np.max(xwmin),np.min(xwmax),dx)
     nwvl = len(new_disp_grid)
     obs_matrix = np.zeros(shape=(len(larch),nwvl))
     ldel=[]
@@ -1139,7 +1137,7 @@ def setregion(wreg,delta,winf,wsup,amort=0.1):
         f[i1:i2]=mask
     return(wvl,f)
 
-def continuum(w,f, order=12, type='fit', lo=2, hi=3, nit=20, graph=True):
+def continuum(w,f, order=12, type='fit', lo=2, hi=3, nit=10, graph=True):
     w_cont=w.copy()
     f_cont=f.copy()
     sigma0=np.std(f_cont)
@@ -1316,12 +1314,15 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
             r = np.max(ccnew)/(np.sqrt(2*sig_anti))
             #calculate FFT
             wfreq1=fft(ccnew)
-            nmed=int(len(wfreq1.imag)/2)
-            ys2=np.sqrt(wfreq1.imag[1:nmed]**2)
+            nmed=int(len(wfreq1.imag)/4)
+            ys2=np.log(np.sqrt(wfreq1.real[1:nmed]**2+wfreq1.imag[1:nmed]**2))
+            ys2=ys2-ys2[-1]
             xs2=np.arange(1,nmed,1)
             # fit gaussian function without wieghts
             aux_x=np.concatenate((-1*xs2[::-1],xs2))
             aux_y=np.concatenate((ys2[::-1],ys2))
+            az=np.where(aux_y==0)
+            aux_y[az]=1e-10
             p1, pc1 = curve_fit(doubleG, aux_x, aux_y)
             #error for gaussian at half maximum
             B_exp1 = p1[1]*2.35482/2
