@@ -1,32 +1,32 @@
 <h1 align="center"> BiSpeD </h1>
 
-The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy applications. The package includes tasks to manipulate and process spectral observations of binary stars; the main goal of this development is finds and extracts the spectral features of the secondary companion star.
+The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy applications. The package includes tasks to manipulate and process spectral observations of binary stars; the main goal of this development is to find and extract the spectral features of the secondary companion star.
 
 
  ## Introduction
 
-The BiSpeD code allows to estimate the mass ratio among companions (*q*-value). The spectral features of primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. Eventually, the BiSpeD code works through specific functions (tasks) with them aims. In *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented.
+The BiSpeD code allows us to estimate the mass ratio among companions (*q*-value). The spectral features of the primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with a secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. Eventually, the BiSpeD code works through specific functions (tasks) with their aims. In the *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented.
 
 ## Installation
 
-BiSpeD is distributed on PyPI as a universal wheel and is available on Linux/macOS and Windows and supports Python 3.6, 3.8 and 3.10.
+BiSpeD is distributed on PyPI as a universal wheel is available on Linux/macOS and Windows and supports Python 3.10.12
 
 ```bash
-pip install bisped
+pip install git+https://github.com/israelmarti/BiSpeD#egg=bisped
 ```
-For optimized interactive useful run from [IPython](https://ipython.org/install.html).
+For the optimized interactive useful run from [IPython](https://ipython.org/install.html).
 
 ## Dependencies
 
 BiSpeD requires the latest dependencies for Python 3.10 (for 3.6 and 3.8 install these versions):
-- [Astropy](https://www.astropy.org) (v5.1)
-- [Matplotlib](https://matplotlib.org) (v3.7.2)
-- [Numba](https://numba.pydata.org) (v0.58.0)
-- [Numpy](https://www.numpy.org)  (v1.24.3)
-- [Progress](https://pypi.org/project/progress) (v1.5)
-- [PyAstronomy](https://pyastronomy.readthedocs.io) (v0.19.0)
-- [SciPy](https://scipy.org) (v1.10.1)
-- [Specutils](https://specutils.readthedocs.io) (v1.10.0)
+- [Astropy](https://www.astropy.org) (v6.0.0)
+- [Matplotlib](https://matplotlib.org) (v3.8.3)
+- [Numba](https://numba.pydata.org) (v0.59.0)
+- [Numpy](https://www.numpy.org)  (v1.26.4)
+- [Progress](https://pypi.org/project/progress) (v1.6)
+- [PyAstronomy](https://pyastronomy.readthedocs.io) (v0.20.0)
+- [SciPy](https://scipy.org) (v1.12.0)
+- [Specutils](https://specutils.readthedocs.io) (v1.13.0)
 
 ## Main Functions
 
