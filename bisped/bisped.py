@@ -175,7 +175,7 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     pres=[pool.apply_async(qparallel, args= [chk,lis,larch,spa,spb,deltaq,vgamma]) for chk in qa2]
     #pool.close()
     #pool.join()
-    pres = [chk.get() for chk in pres]
+    pres2 = [chk.get() for chk in pres]
     #pool.terminate()
     print('\nProcess completed successfully!\n')
     print('')
@@ -254,7 +254,7 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     print('')
     #Estimate mass ratio q and effective temperature Teff for according to a parabole function
     qmed=np.max(matrix_cc,axis=0)
-    iq2=int(np.where(qmed == np.max(qmed))[0])
+    iq2=np.where(qmed == np.max(qmed))[0][0]
     if qmed[iq2] !=qmed[0] and qmed[iq2] !=qmed[-1]:
         best_q = q_array[iq2]-(qmed[iq2+1]-qmed[iq2-1])*deltaq/2/(qmed[iq2-1]+qmed[iq2+1]-2*qmed[iq2])
     else:
@@ -273,24 +273,19 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     print('\t· · · · · · · · · · · · · ·')
     print('\t  Teff='+str(int(vector_t[jt2]))+' K\tq = '+str(round(best_q,2))+'  ')
     print('\t· · · · · · · · · · · · · ·')
-    #Graph results for q vs Teff
-    fig=plt.figure(figsize=[5,5])
-    ax = fig.add_subplot(111, projection='3d')
+    #Graph results for best q and Teff
+    fig=plt.figure(figsize=[6,7.4])
+    gs = gridspec.GridSpec(nrows=2, ncols=2,height_ratios=[7, 1])
+    ax0 = fig.add_subplot(gs[0, :], projection='3d')
+    ax0.set_title(obj1)
     plt.rc('xtick', labelsize=9)
     plt.rc('ytick', labelsize=9)
-    ax.set_xlabel("Mass ratio ($q$)", fontsize=9)
-    ax.set_ylabel("Temp. [1000 K]", fontsize=9)
+    ax0.set_xlabel("Mass ratio ($q$)", fontsize=9)
+    ax0.set_ylabel("Temp. [1000 K]", fontsize=9)
     X, Y = np.meshgrid(q_array, vector_t/1000)
     Z = matrix_cc
-    ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap='jet')
-    fig.subplots_adjust(top=1,bottom=0.05,left=0.05,right=0.92,hspace=0.2,wspace=0.02)
-    aux3 = os.path.isfile(obj1+'_CC.jpeg')
-    if aux3:
-        os.remove(obj1+'_CC.jpeg')
-    plt.savefig(path1+'/'+obj1+'_CC.jpeg')
-    #Graph results for best q and Teff
-    fig=plt.figure(figsize=[8,2])
-    ax1=plt.subplot(1, 2, 1) 
+    ax0.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap='jet')
+    ax1 = fig.add_subplot(gs[1, 0])
     ax1.plot(q_array,qmed,marker='',ls='-', color='blue')
     plt.rc('xtick', labelsize=9)
     plt.rc('ytick', labelsize=9)
@@ -298,17 +293,15 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     ax1.set_xlabel("Mass ratio ($q$)", fontsize=9)
     ax1.set(xlim=(min(q_array), max(q_array)))
     plt.axvline(x=best_q, color='black', linestyle='--',linewidth=1)
-    ax2=plt.subplot(1, 2, 2) 
-    plt.setp(ax2.get_yticklabels(), visible=False)
+    ax2 = fig.add_subplot(gs[1, 1])
     ax2.plot(vector_t,tmed,marker='',ls='-', color='red')
     ax2.set_xlabel("Temp. [1000 K]", fontsize=9)
     ax2.set(xlim=(vector_t[0], vector_t[-1]))
     plt.axvline(x=vector_t[jt2], color='black', linestyle='--',linewidth=1)
-    plt.subplots_adjust(top=1.0,bottom=0.207,left=0.06,right=0.995,hspace=0.25,wspace=0.02)
-    aux4 = os.path.isfile(obj1+'_qT.jpeg')
-    if aux4:
-        os.remove(obj1+'_qT.jpeg')
-    plt.savefig(path1+'/'+obj1+'_qT.jpeg')
+    aux3 = os.path.isfile(obj1+'_CC.jpeg')
+    if aux3:
+        os.remove(obj1+'_CC.jpeg')
+    plt.savefig(path1+'/'+obj1+'_CC.jpeg')
 
 ################################################################
 ################################################################
@@ -1246,7 +1239,7 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
     #uniformize cc1
     cc1=cc1/(np.sqrt(np.sum(np.power(fi2,2)))*(np.sqrt(np.sum(np.power(ft2,2)))))
     #find peak value
-    i1=int(np.where(cc1==max(cc1))[0])
+    i1=np.where(cc1==max(cc1))[0][0]
     #x-lags for cc1
     lamlog1=new_log_grid-new_log_grid[0]
     lamlog2=-new_log_grid+new_log_grid[0]
@@ -1266,11 +1259,11 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
     nach=0
     while stat:
         near0=axisrv.flat[np.abs(axisrv - xcent).argmin()]
-        i0=int(np.where(axisrv == near0)[0])
+        i0=np.where(axisrv == near0)[0][0]
         near1=axisrv.flat[np.abs(axisrv - min(rv1,rv2)).argmin()]
-        i1=int(np.where(axisrv == near1)[0])
+        i1=np.where(axisrv == near1)[0][0]
         near2=axisrv.flat[np.abs(axisrv - max(rv1,rv2)).argmin()]
-        i2=int(np.where(axisrv == near2)[0])
+        i2=np.where(axisrv == near2)[0][0]
         try:
             xb=axisrv[i1:i2]
             yb=cc1[i1:i2]
@@ -1281,9 +1274,9 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
             #for initial approach recalculate gbase
             if nach==0:
                 mod_rv1=axisrv.flat[np.abs(axisrv - (xcent-pb1[2]*5)).argmin()]
-                mod_i1=int(np.where(axisrv == mod_rv1)[0])
+                mod_i1=np.where(axisrv == mod_rv1)[0][0]
                 mod_rv2=axisrv.flat[np.abs(axisrv - (xcent+pb1[2]*5)).argmin()]
-                mod_i2=int(np.where(axisrv == mod_rv2)[0])
+                mod_i2=np.where(axisrv == mod_rv2)[0][0]
                 #calculate most probable value
                 gbase=min(cc1[mod_i1:mod_i2])
                 xb=axisrv[i1:i2]
