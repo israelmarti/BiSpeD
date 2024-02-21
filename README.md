@@ -14,7 +14,7 @@ BiSpeD is distributed on PyPI as a universal wheel and is available on Linux/mac
 ```bash
 pip install bisped
 ```
-For optimized interactive usefull run from [IPython](https://ipython.org/install.html).
+For optimized interactive useful run from [IPython](https://ipython.org/install.html).
 
 ## Dependencies
 
@@ -22,7 +22,7 @@ BiSpeD requires the latest dependencies for Python 3.10 (for 3.6 and 3.8 install
 - [Astropy](https://www.astropy.org) (v5.1)
 - [Matplotlib](https://matplotlib.org) (v3.7.2)
 - [Numba](https://numba.pydata.org) (v0.58.0)
-- [Numpy](https://www.numpy.org)  (v1.23.3)
+- [Numpy](https://www.numpy.org)  (v1.24.3)
 - [Progress](https://pypi.org/project/progress) (v1.5)
 - [PyAstronomy](https://pyastronomy.readthedocs.io) (v0.19.0)
 - [SciPy](https://scipy.org) (v1.10.1)
@@ -55,7 +55,7 @@ find2c('@lista', '/home/user/templates', wreg='4000-4320,4360-4850,4875-5900', n
 ```
 
 - **hselect**
-> Extract keyword values (`fields`, string viariable type) from a FITS image or file list (`img`, string viariable type). In the case of a file list, the file name must be preceded by the symbol @.
+> Extract keyword values (`fields`, string variable type) from a FITS image or file list (`img`, string variable type). In the case of a file list, the file name must be preceded by the symbol @.
 > 
 > Example:
 ```python3
@@ -63,7 +63,7 @@ hselect('@lista', 'object')
 ```
 
 - **rvbina**
-> This task computes the cross-correlation of radial velocities between two spectra using the Fast Fourier Transform method (FFT) to perform the convolution. The output is the full discrete linear convolution of the inputs showed in a dispersion grid defined on the spectral region of ´wreg´. It requires the previous estimation of primary and secondary mean spectra. First, the primary RV is determined by cross-correlation among observed spectrum and an estimated template for primary component; then the mean spectroscopic features are removed from observed spectra and the secondary RV determination is carry out. The cross-correlation function is fitted for the most significative peak with a Gaussian function.
+> This task computes the cross-correlation of radial velocities between two spectra using the Fast Fourier Transform method (FFT) to perform the convolution. The output is the full discrete linear convolution of the inputs shown in a dispersion grid defined on the spectral region of ´wreg´. It requires the previous estimation of primary and secondary mean spectra. First, the primary RV is determined by cross-correlation among the observed spectrum and an estimated template for the primary component; then the mean spectroscopic features are removed from observed spectra and the secondary RV determination is carried out. The cross-correlation function is fitted for the most significative peak with a Gaussian function.
 > 
 > Mandatory parameters:
 > - `lis` (string): file list of observed spectra to process. The file name must be preceded by the symbol @.
@@ -73,7 +73,7 @@ hselect('@lista', 'object')
 > - `tb`: spectrum template, in FITS extension with or without extension, for comparison with secondary component (string);
 > 
 > Optional parameters:
-> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regiones joined with ' " , ";
+> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regions joined with ' " , ";
 > - `aconv`: damping convergence factor (float);
 > - `keyjd`: header keyword that contains Julian Date (string);
 > - `fitcont`: continuum subtraction of spectra dataset prior to correlation analysis (boolean);
@@ -85,7 +85,7 @@ rvbina('@lista', spa='sp_A', spb='sp_B', wreg='3550-4700,4850-5680', keyjd='HJD'
 ```
 
 - **rvextract**
-> Analyze the convergence of iterative **rvbina** task for a spectra file list (mandatory parameter `lis`, string viariable type). The optional parameters are `output` (string) to write a file with RV values and `graphic` (boolean) to show the RV convergence as a function of iteration number.
+> Analyze the convergence of iterative **rvbina** task for a spectra file list (mandatory parameter `lis`, string variable type). The optional parameters are `output` (string) to write a file with RV values and `graphic` (boolean) to show the RV convergence as a function of iteration number.
 > 
 > Example:
 ```python3
@@ -93,12 +93,12 @@ rvextract('@lista', output='file_RVs.txt', graph=True)
 ```
 
 - **setrvs**
-> Measurement of radial velocities for each spectrum from the dataset using cross-correlation with templates defined by the user. This task can be applied for SB1 and SB2 binary systems; in the case of double-line stars, the template of the secondary companion star must also be provided. The only mandatory parameter is spectra file list `lis` (string).
+> Measurement of radial velocities for each spectrum from the dataset using cross-correlation with templates defined by the user. This task can be applied for SB1 and SB2 binary systems; in the case of double-line stars, the template of the secondary companion star must also be provided. The only mandatory parameter is the spectra file list `lis` (string).
 >  
 > Optional parameters:
 > - `ta`: spectrum template, in FITS extension with or without extension, for comparison with primary component (string);
 > - `tb`: spectrum template, in FITS extension with or without extension, for comparison with secondary component (string);
-> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regiones joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
+> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regions joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
 > - `keyjd`: header keyword that contains Julian Date (string);
 > - `fitcont`: continuum subtraction of spectra dataset prior to correlation analysis (boolean);
 > - `interac`: process cross-correlation interactively (boolean).
@@ -109,7 +109,7 @@ setrvs('@lista', ta='/home/user/templates/04800-4.50.fits', interac=True)
 ```
 
 - **spbina**
-> Compute spectral disentangling. The only mandatory parameter is spectra file list `lis` (string).
+> Compute spectral disentangling. The only mandatory parameter is the spectra file list `lis` (string).
 > Optional parameters:
 > - `spa`: name of primary component mean spectrum (string);
 > - `spb`: name of secondary component mean spectrum (string);
@@ -151,7 +151,7 @@ splot('2022-08-22_0310.fits', xmin=3215, xmax=5500, newfig=False, color='green')
 ```
 
 - **uniform**
-> Explore a spectra dataset (if the interactive mode is active, given by the optional parameter `interac=True`) and select the bests spectra to process. Finally, this task scales each spectrum from the selected dataset to a mean continuum factor to make them morphologically consistent. The mandatory parameter is `lis` (string) for the file list of observed spectra to process; and the optional parameter is interactive mode `interac` (boolean). 
+> Explore a spectra dataset (if the interactive mode is active, given by the optional parameter `interac=True`) and select the best spectra to process. Finally, this task scales each spectrum from the selected dataset to a mean continuum factor to make them morphologically consistent. The mandatory parameter is `lis` (string) for the file list of observed spectra to process; and the optional parameter is interactive mode `interac` (boolean). 
 > 
 > Example for interactive mode useful:
 ```python3
@@ -178,7 +178,7 @@ vexplore('output_00/')
 > - `qmin`: minimum mass ratio for cross-correlation grid (float);
 > - `qmax`: maximum mass ratio for cross-correlation grid (float);     
 > - `deltaq`: mass increments for cross-correlation grid (float);
-> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regiones joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
+> - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regions joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
 > - `nproc`: number of parallel processes to use in computing, it depends on computer resources (integer).
 >
 > Example:
