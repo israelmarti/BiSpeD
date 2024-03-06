@@ -274,7 +274,7 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     print('\t  Teff='+str(int(vector_t[jt2]))+' K\tq = '+str(round(best_q,2))+'  ')
     print('\t· · · · · · · · · · · · · ·')
     #Graph results for best q and Teff
-    fig=plt.figure(figsize=[6,7.4])
+    fig=plt.figure(figsize=[8,7.4])
     gs = gridspec.GridSpec(nrows=2, ncols=2,height_ratios=[7, 1])
     ax0 = fig.add_subplot(gs[0, :], projection='3d')
     ax0.set_title(obj1)
