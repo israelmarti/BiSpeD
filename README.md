@@ -110,6 +110,7 @@ setrvs('@lista', ta='/home/user/templates/04800-4.50.fits', interac=True)
 
 - **spbina**
 > Compute spectral disentangling. The only mandatory parameter is the spectra file list `lis` (string).
+> 
 > Optional parameters:
 > - `spa`: name of primary component mean spectrum (string);
 > - `spb`: name of secondary component mean spectrum (string);
@@ -133,6 +134,7 @@ setrvs('@lista', nit=10, frat=0.67, q=0.81, vgamma=2.1, interac=True)
 
 - **splot**
 > Plot and show spectrum (must be in FITS extension). The mandatory parameter is the file spectrum name `file` (string).
+> 
 > Optional parameters:
 > - `xmin`: lower wavelength limit for graphic (float);
 > - `xmax`: upper wavelength limit for graphic (float);
@@ -167,10 +169,12 @@ vexplore('output_00/')
 ```
 
 - **vgrid**
-> When the orbital period for primary RV values cannot be derived from the primary RVs, and the systemic velocity is unknown, the task `vgrid` can be applied to estimate the best systemic radial velocity of the binary system through systemic velocities grid around the most probable value. 
+> When the orbital period for primary RV values cannot be derived from the primary RVs, and the systemic velocity is unknown, the task `vgrid` can be applied to estimate the best systemic radial velocity of the binary system through systemic velocities grid around the most probable value.
+> 
 >Mandatory parameters:
 > - `lis`: file list of observed spectra to process (string);
 > - `tmp`: full path to the folder containing spectra templates (string);
+> - 
 > Optional parameters:
 > - `svmin`: lower systemic radial velocity for grid in km/s (float);
 > - `svmax`: upper systemic radial velocity for grid in km/s (float);
