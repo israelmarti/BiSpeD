@@ -5,7 +5,7 @@ The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy
 
  ## Introduction
 
-The BiSpeD code allows us to estimate the mass ratio among companions (*q*-value). The spectral features of the primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with a secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. The effective temperature value of each spectrum template must be contained in a keyword named "TEFF". Eventually, the BiSpeD code works through specific functions (tasks) with their aims. In the *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented.
+The BiSpeD code allows us to estimate the mass ratio among companions (*q*-value). The spectral features of the primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with a secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. The effective temperature value of each spectrum template must be contained in a keyword named "TEFF". Eventually, the BiSpeD code works through specific functions (tasks) with their aims. In the *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented. The observed and templates spectra should have linear dispersion sampling.
 
 ## Installation
 
@@ -51,7 +51,7 @@ BiSpeD requires the latest dependencies for Python 3.10 (for 3.6 and 3.8 install
 > 
 > Example:
 ```python3
-find2c('@lista', '/home/user/templates', wreg='4000-4320,4360-4850,4875-5900', nproc=8)
+find2c('@lista', '/home/user/templates', 5.1, wreg='4000-4320,4360-4850,4875-5900', nproc=8)
 ```
 
 - **hselect**
@@ -67,12 +67,12 @@ hselect('@lista', 'object')
 > 
 > Mandatory parameters:
 > - `lis` (string): file list of observed spectra to process. The file name must be preceded by the symbol @.
+> 
+> Optional parameters:
 > - `spa`: name of primary component mean spectrum (string);
 > - `spb`: name of secondary component mean spectrum (string);
 > - `ta`: spectrum template, in FITS extension with or without extension, for comparison with primary component (string);
 > - `tb`: spectrum template, in FITS extension with or without extension, for comparison with secondary component (string);
-> 
-> Optional parameters:
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regions joined with ' " , ";
 > - `aconv`: damping convergence factor (float);
 > - `keyjd`: header keyword that contains Julian Date (string);
