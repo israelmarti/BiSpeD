@@ -158,7 +158,7 @@ def help(function):
 ################################################################
 ################################################################
 ################################################################
-def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.01, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900',nproc=6):
+def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900',nproc=6):
     plt.ion()
     print('\n\tRunning FIND2C\n')
     VerifyWarning('ignore')
@@ -249,6 +249,7 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     hcc[0].header['T1'] = vector_t[-1]
     hcc[0].header['DELTA_T'] = vector_t[1]-vector_t[0]
     hcc[0].header['VGAMMA'] = vgamma
+    hcc[0].header['WREG'] = '4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'
     hcc.close(output_verify='ignore')
     bar2.finish()
     print('')
@@ -274,7 +275,7 @@ def find2c(lis, lit, spa='A', spb='B', vgamma=0, qmin=0.02, qmax=0.5, deltaq=0.0
     print('\t  Teff='+str(int(vector_t[jt2]))+' K\tq = '+str(round(best_q,2))+'  ')
     print('\t· · · · · · · · · · · · · ·')
     #Graph results for best q and Teff
-    fig=plt.figure(figsize=[8,7.4])
+    fig=plt.figure(figsize=[6,7.4])
     gs = gridspec.GridSpec(nrows=2, ncols=2,height_ratios=[7, 1])
     ax0 = fig.add_subplot(gs[0, :], projection='3d')
     ax0.set_title(obj1)
@@ -844,6 +845,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
         hcc[0].header['T1'] = vector_t[-1]
         hcc[0].header['DELTA_T'] = vector_t[1]-vector_t[0]
         hcc[0].header['VGAMMA'] = float(vgindex)
+        hcc[0].header['WREG'] = '4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'
         hcc.close(output_verify='ignore') 
         #Clean A.fits and B.fits files
         for xq in q_array:
