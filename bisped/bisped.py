@@ -35,7 +35,7 @@ import operator
 from scipy.fft import fft
 spline3 = SplineInterpolatedResampler()
 
-print("====================================\nBinary Spectral Disentangling (v1.2)\n====================================\n")
+print("====================================\nBinary Spectral Disentangling (v1.3)\n====================================\n")
 print("Available functions list:\n")
 print("\tfind2c\n\thselect\n\trvbina\n\trvextract\n\tsetrvs\n\tspbina\n\tsplot\n\tuniform\n\tvgrid\n\tvexplore\n\n")
 def help(function):
