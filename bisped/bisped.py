@@ -28,7 +28,6 @@ from matplotlib.widgets import Button
 from numba import jit
 from progress.bar import ChargingBar
 from multiprocessing import Pool
-import time
 from os import scandir, getcwd
 from os.path import abspath
 import operator
@@ -64,6 +63,13 @@ def help(function):
         print('Mandatory arguments:')
         print('       img - image or file list to process (use @ for file list)')
         print('    fields - comma separated list of keywords to be extracted from each selected image\n')
+    elif function.lower() == 'onecomp':
+        print('\nONECOMP\n\nCompare one dimension spectrum with a template list.\n')
+        print('Mandatory arguments:')
+        print('       img - image or file list to process (use @ for file list)')
+        print('       lit - full path to the folder containing spectra templates')
+        print('Optional arguments:')
+        print('      wreg - spectral regions for cross correlation analysis')
     elif function.lower() == 'rvbina':
         print('\nRVBINA: This function remove the spectral lines features from observed spectra and computes \
         the cross-correlation of radial velocities with a spectrum template using the Fast Fourier Transform \
@@ -321,6 +327,66 @@ def hselect(img,fields):
                 print(np.nan,end='\t')
         print('\n')
         hdul.close()
+################################################################
+################################################################
+################################################################
+def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
+    plt.ion()
+    VerifyWarning('ignore')
+    if lit[len(lit)-1] == '/':
+        lit=lit[0:len(lit)-1]
+    ltemp=sorted(listmp(lit))
+    #create fading mask
+    dlist=[]
+    hobs = fits.open(img, 'update')
+    d1 = hobs[0].header['CDELT1']
+    dlist.append(d1)
+    try:
+        obj1 = hobs[0].header['OBJECT']
+        obj1=obj1.replace(' ','')
+    except KeyError:
+        obj1='NoObject'
+    hobs.close(output_verify='ignore')
+    htmp = fits.open(ltemp[0], 'update')
+    d2 = htmp[0].header['CDELT1']
+    dlist.append(d2)
+    htmp.close(output_verify='ignore')
+    waux1,faux1 = pyasl.read1dFitsSpec(img)
+    waux2,faux2 = pyasl.read1dFitsSpec(img)
+    #gap expresed wavelenght magins in pixels
+    gap=50
+    winf=max(waux1[0],waux2[0])+gap
+    wsup=min(waux1[-1],waux2[-1])-gap
+    new_disp_grid,fmask = setregion(wreg,np.max(dlist),winf,wsup)
+    wimg,fimg = pyasl.read1dFitsSpec(img)
+    spec_cont=continuum(wimg, fimg, type='diff', nit=5, lo=2.5,hi=3.5, graph=False)
+    aux_img = Spectrum1D(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
+    aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
+    matrix_sq = splineclean(aux2_img.flux.value)*fmask    
+    vector_t=np.zeros(len(ltemp))
+    matrix_cc=np.zeros(len(ltemp))
+    bar2 = ChargingBar('Comparing templates:', max=len(ltemp))
+    for k,tmp in enumerate(ltemp):
+        htmp = fits.open(tmp, 'update')
+        teff= htmp[0].header['TEFF']
+        vector_t[k]=teff
+        htmp.close(output_verify='ignore')
+        wt1,ft1 = pyasl.read1dFitsSpec(tmp)
+        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
+        aux_tmp1 = Spectrum1D(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
+        aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
+        template1=splineclean(aux2_tmp1.flux.value*fmask)
+        tt=np.mean(template1**2)
+        tb=np.mean((template1*matrix_sq))
+        matrix_cc[k]=tb/(np.sqrt(np.mean(matrix_sq**2))*np.sqrt(tt))
+        bar2.next()
+    bar2.finish()
+    plt.figure()
+    plt.rc('xtick', labelsize=9)
+    plt.rc('ytick', labelsize=9)
+    plt.ylabel("Correlation", fontsize=9)
+    plt.xlabel("Temp. [1000 K]", fontsize=9)
+    plt.plot(vector_t,matrix_cc,marker='',ls='-', color='red')
 ################################################################
 ################################################################
 ################################################################
@@ -812,12 +878,8 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
         pool=Pool(processes=nproc)
         qa2=np.array_split(q_array,nproc)
         pres=[pool.apply_async(qparallel, args= [chk,lis,larch,'A','B',deltaq,vgamma]) for chk in qa2]
-        time.sleep(1)
-        pool.close()
-        pool.join()
-        time.sleep(1)
-        pres = [chk.get() for chk in pres]
-        pool.terminate()
+        pres2 = [chk.get() for chk in pres]
+        #pool.terminate()
         matrix_sq=np.zeros(shape=(len(q_array),len(new_disp_grid)))
         #Load calculated B_q spectra
         for j,xq in enumerate(q_array):
