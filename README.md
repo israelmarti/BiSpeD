@@ -62,6 +62,14 @@ find2c('@lista', '/home/user/templates', 5.1, wreg='4000-4320,4360-4850,4875-590
 hselect('@lista', 'object')
 ```
 
+- **onecomp**
+> Compare one dimension spectrum (`img`, string variable type) with a template list (`tmp`, string variable type to specify the full path to the folder containing spectra templates) to find the best effective temperature. The only optional parameter is the spectral regions for cross-correlation analysis (`wreg`).
+> 
+> Example:
+```python3
+onecomp('observed_spectrum.fits', '/home/user/templates')
+```
+
 - **rvbina**
 > This task computes the cross-correlation of radial velocities between two spectra using the Fast Fourier Transform method (FFT) to perform the convolution. The output is the full discrete linear convolution of the inputs shown in a dispersion grid defined on the spectral region of ´wreg´. It requires the previous estimation of primary and secondary mean spectra. First, the primary RV is determined by cross-correlation among the observed spectrum and an estimated template for the primary component; then the mean spectroscopic features are removed from observed spectra and the secondary RV determination is carried out. The cross-correlation function is fitted for the most significative peak with a Gaussian function.
 > 
