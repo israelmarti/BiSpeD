@@ -36,7 +36,7 @@ spline3 = SplineInterpolatedResampler()
 
 print("====================================\nBinary Spectral Disentangling (v1.3)\n====================================\n")
 print("Available functions list:\n")
-print("\tfind2c\n\thselect\n\trvbina\n\trvextract\n\tsetrvs\n\tspbina\n\tsplot\n\tuniform\n\tvgrid\n\tvexplore\n\n")
+print("\tfind2c\n\thselect\n\tonecomp\n\trvbina\n\trvextract\n\tsetrvs\n\tspbina\n\tsplot\n\tuniform\n\tvgrid\n\tvexplore\n\n")
 def help(function):
     if function.lower() == 'find2c':
         print('\nFIND2C\n\nThis task makes and writes, in FITS extension, a spectra dataset of possible secondary \
