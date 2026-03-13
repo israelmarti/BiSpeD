@@ -1,32 +1,32 @@
 <h1 align="center"> BiSpeD </h1>
 
-The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy applications. The package includes tasks to manipulate and process spectral observations of binary stars; the main goal of this development is to find and extract the spectral features of the secondary companion star.
+The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy applications. The package includes tasks to manipulate and process spectral observations of binary stars; the main goal of this development is finds and extracts the spectral features of the secondary companion star.
 
 
  ## Introduction
 
-The BiSpeD code allows us to estimate the mass ratio among companions (*q*-value). The spectral features of the primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with a secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. The effective temperature value of each spectrum template must be contained in a keyword named "TEFF". Eventually, the BiSpeD code works through specific functions (tasks) with their aims. In the *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented. The observed and templates spectra should have linear dispersion sampling.
+The BiSpeD (v1.4) code allows to estimate the mass ratio among companions (*q*-value). The spectral features of primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. Eventually, the BiSpeD code works through specific functions (tasks) with them aims. In *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented.
 
 ## Installation
 
-BiSpeD is distributed on PyPI as a universal wheel is available on Linux/macOS and Windows and supports Python 3.10.12
+BiSpeD is distributed on PyPI as a universal wheel and is available on Linux/macOS and Windows and supports Python 3.12.
 
 ```bash
-pip install git+https://github.com/israelmarti/BiSpeD#egg=bisped
+pip install bisped
 ```
-For the optimized interactive useful run from [IPython](https://ipython.org/install.html).
+For optimized interactive useful run from [IPython](https://ipython.org/install.html).
 
 ## Dependencies
 
-BiSpeD requires the latest dependencies for Python 3.10 (for 3.6 and 3.8 install these versions):
-- [Astropy](https://www.astropy.org) (v6.0.0)
-- [Matplotlib](https://matplotlib.org) (v3.8.3)
-- [Numba](https://numba.pydata.org) (v0.59.0)
-- [Numpy](https://www.numpy.org)  (v1.26.4)
-- [Progress](https://pypi.org/project/progress) (v1.6)
-- [PyAstronomy](https://pyastronomy.readthedocs.io) (v0.20.0)
-- [SciPy](https://scipy.org) (v1.12.0)
-- [Specutils](https://specutils.readthedocs.io) (v1.13.0)
+BiSpeD requires the latest dependencies for Python 3.12:
+- [Astropy](https://www.astropy.org) (v7.1.0)
+- [Matplotlib](https://matplotlib.org) (v3.10.6)
+- [Numba](https://numba.pydata.org) (v0.62.1)
+- [Numpy](https://www.numpy.org)  (v2.3.2)
+- [Progress](https://pypi.org/project/progress) (v1.6.1)
+- [PyAstronomy](https://pyastronomy.readthedocs.io) (v0.24.0)
+- [SciPy](https://scipy.org) (v1.16.1)
+- [Specutils](https://specutils.readthedocs.io) (v2.2.0)
 
 ## Main Functions
 
@@ -51,7 +51,7 @@ BiSpeD requires the latest dependencies for Python 3.10 (for 3.6 and 3.8 install
 > 
 > Example:
 ```python3
-find2c('@lista', '/home/user/templates', 5.1, wreg='4000-4320,4360-4850,4875-5900', nproc=8)
+find2c('@lista', '/home/user/templates', wreg='4000-4320,4360-4850,4875-5900', nproc=8)
 ```
 
 - **hselect**
@@ -62,25 +62,17 @@ find2c('@lista', '/home/user/templates', 5.1, wreg='4000-4320,4360-4850,4875-590
 hselect('@lista', 'object')
 ```
 
-- **onecomp**
-> Compare one dimension spectrum (`img`, string variable type) with a template list (`tmp`, string variable type to specify the full path to the folder containing spectra templates) to find the best effective temperature. The only optional parameter is the spectral regions for cross-correlation analysis (`wreg`).
-> 
-> Example:
-```python3
-onecomp('observed_spectrum.fits', '/home/user/templates')
-```
-
 - **rvbina**
 > This task computes the cross-correlation of radial velocities between two spectra using the Fast Fourier Transform method (FFT) to perform the convolution. The output is the full discrete linear convolution of the inputs shown in a dispersion grid defined on the spectral region of ´wreg´. It requires the previous estimation of primary and secondary mean spectra. First, the primary RV is determined by cross-correlation among the observed spectrum and an estimated template for the primary component; then the mean spectroscopic features are removed from observed spectra and the secondary RV determination is carried out. The cross-correlation function is fitted for the most significative peak with a Gaussian function.
 > 
 > Mandatory parameters:
 > - `lis` (string): file list of observed spectra to process. The file name must be preceded by the symbol @.
-> 
-> Optional parameters:
 > - `spa`: name of primary component mean spectrum (string);
 > - `spb`: name of secondary component mean spectrum (string);
 > - `ta`: spectrum template, in FITS extension with or without extension, for comparison with primary component (string);
 > - `tb`: spectrum template, in FITS extension with or without extension, for comparison with secondary component (string);
+> 
+> Optional parameters:
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regions joined with ' " , ";
 > - `aconv`: damping convergence factor (float);
 > - `keyjd`: header keyword that contains Julian Date (string);
@@ -118,7 +110,6 @@ setrvs('@lista', ta='/home/user/templates/04800-4.50.fits', interac=True)
 
 - **spbina**
 > Compute spectral disentangling. The only mandatory parameter is the spectra file list `lis` (string).
-> 
 > Optional parameters:
 > - `spa`: name of primary component mean spectrum (string);
 > - `spb`: name of secondary component mean spectrum (string);
@@ -142,7 +133,6 @@ setrvs('@lista', nit=10, frat=0.67, q=0.81, vgamma=2.1, interac=True)
 
 - **splot**
 > Plot and show spectrum (must be in FITS extension). The mandatory parameter is the file spectrum name `file` (string).
-> 
 > Optional parameters:
 > - `xmin`: lower wavelength limit for graphic (float);
 > - `xmax`: upper wavelength limit for graphic (float);
@@ -177,12 +167,10 @@ vexplore('output_00/')
 ```
 
 - **vgrid**
-> When the orbital period for primary RV values cannot be derived from the primary RVs, and the systemic velocity is unknown, the task `vgrid` can be applied to estimate the best systemic radial velocity of the binary system through systemic velocities grid around the most probable value.
-> 
+> When the orbital period for primary RV values cannot be derived from the primary RVs, and the systemic velocity is unknown, the task `vgrid` can be applied to estimate the best systemic radial velocity of the binary system through systemic velocities grid around the most probable value. 
 >Mandatory parameters:
 > - `lis`: file list of observed spectra to process (string);
 > - `tmp`: full path to the folder containing spectra templates (string);
-> - 
 > Optional parameters:
 > - `svmin`: lower systemic radial velocity for grid in km/s (float);
 > - `svmax`: upper systemic radial velocity for grid in km/s (float);
