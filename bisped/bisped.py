@@ -14,7 +14,7 @@ from astropy.io import fits
 from astropy import units as u
 from astropy.io.fits.verify import VerifyWarning
 from PyAstronomy import pyasl
-from specutils import Spectrum1D
+from specutils import Spectrum
 from specutils.manipulation import SplineInterpolatedResampler
 from specutils.fitting import fit_continuum
 from astropy.modeling.fitting import LinearLSQFitter
@@ -214,7 +214,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
         aux1=str(round(xq,len(str(deltaq+1))-2)).replace('.','')
         wimg,fimg = pyasl.read1dFitsSpec(spb+aux1+'.fits')
         spec_cont=continuum(wimg, fimg, type='diff', nit=5, lo=2.5,hi=3.5, graph=False)
-        aux_img = Spectrum1D(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
+        aux_img = Spectrum(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
         aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
         matrix_sq[j] = splineclean(aux2_img.flux.value)*fmask
         bar1.next()
@@ -232,7 +232,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
         htmp.close(output_verify='ignore')
         wt1,ft1 = pyasl.read1dFitsSpec(tmp)
         temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
-        aux_tmp1 = Spectrum1D(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
+        aux_tmp1 = Spectrum(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
         template1=splineclean(aux2_tmp1.flux.value*fmask)
         tt=np.mean(template1**2)
@@ -360,7 +360,7 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
     new_disp_grid,fmask = setregion(wreg,np.max(dlist),winf,wsup)
     wimg,fimg = pyasl.read1dFitsSpec(img)
     spec_cont=continuum(wimg, fimg, type='diff', nit=5, lo=2.5,hi=3.5, graph=False)
-    aux_img = Spectrum1D(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
+    aux_img = Spectrum(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
     aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
     matrix_sq = splineclean(aux2_img.flux.value)*fmask    
     vector_t=np.zeros(len(ltemp))
@@ -373,7 +373,7 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
         htmp.close(output_verify='ignore')
         wt1,ft1 = pyasl.read1dFitsSpec(tmp)
         temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
-        aux_tmp1 = Spectrum1D(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
+        aux_tmp1 = Spectrum(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
         template1=splineclean(aux2_tmp1.flux.value*fmask)
         tt=np.mean(template1**2)
@@ -467,9 +467,9 @@ def rvbina(lis, spa='A', spb='B', ta='templateA', tb='templateB',
                 setrvs(img,tb=tb,wreg=wreg,fintcont=fitcont,keyjd=keyjd) 
             wlprime_A = wa * np.sqrt((1.+vra/299792.458)/(1.-vra/299792.458))
             wlprime_B = wb * np.sqrt((1.+vrb/299792.458)/(1.-vrb/299792.458))
-            aux_img = Spectrum1D(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
-            aux_sa = Spectrum1D(flux=fa*u.Jy, spectral_axis=wlprime_A*0.1*u.nm)
-            aux_sb = Spectrum1D(flux=fb*u.Jy, spectral_axis=wlprime_B*0.1*u.nm)
+            aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
+            aux_sa = Spectrum(flux=fa*u.Jy, spectral_axis=wlprime_A*0.1*u.nm)
+            aux_sb = Spectrum(flux=fb*u.Jy, spectral_axis=wlprime_B*0.1*u.nm)
             #Resampling of each spectrum (lineal interpolation) with the template grid dispersion
             aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
             aux2_sa = spline3(aux_sa, new_disp_grid*0.1*u.nm)
@@ -606,7 +606,7 @@ def setrvs(lis, ta='templateA', tb=None, wreg='4000-4090,4110-4320,4360-4850,487
             wsup=min(wmaxs)
             delta=np.min([deltamin])
             new_disp_grid,fmask = setregion(wreg,delta,winf,wsup)
-        aux_img = Spectrum1D(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
+        aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
         aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
         fnew=aux2_img.flux.value
         if ta !=None:
@@ -654,7 +654,7 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=No
         cont=0
         for img in larch:
             wimg,fimg = pyasl.read1dFitsSpec(img)
-            aux_img = Spectrum1D(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
+            aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
             aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
             tmp = aux2_img.flux.value
             tmp_matrix[cont] = splineclean(tmp)
@@ -667,7 +667,7 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=No
         B = f_cont* fb
     else:
         waux, faux = pyasl.read1dFitsSpec(spb+'.fits')
-        aux_B = Spectrum1D(flux=faux*u.Jy, spectral_axis=waux*0.1*u.nm)
+        aux_B = Spectrum(flux=faux*u.Jy, spectral_axis=waux*0.1*u.nm)
         aux2_B = spline3(aux_B, new_disp_grid*0.1*u.nm)
         tmp2 = aux2_B.flux.value
         B = splineclean(tmp2)
@@ -695,11 +695,11 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=No
         wimg,fimg = pyasl.read1dFitsSpec(img)
         #doppler correction for B.fits
         wlprime_B = new_disp_grid * np.sqrt((1.+vrb/299792.458)/(1.-vrb/299792.458))
-        aux_sb = Spectrum1D(flux=B*u.Jy, spectral_axis=wlprime_B *0.1*u.nm)
+        aux_sb = Spectrum(flux=B*u.Jy, spectral_axis=wlprime_B *0.1*u.nm)
         aux2_sb = spline3(aux_sb, new_disp_grid*0.1*u.nm)
         fb_dop = aux2_sb.flux.value
         #Replace np.nan values for the nearest element
-        aux_img = Spectrum1D(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
+        aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
         aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
         dsB = aux2_img.flux.value - fb_dop
         dsB_matrix[cont] = splineclean(dsB)
@@ -712,7 +712,7 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=No
             bar3 = ChargingBar('Calculating spectra:', max=nit)
         for j in range(nimg):
             wlprime_A = new_disp_grid * np.sqrt((1.-vra_array[j]/299792.458)/(1.+vra_array[j]/299792.458))
-            aux_sa = Spectrum1D(flux=dsB_matrix[j] *u.Jy, spectral_axis=wlprime_A *0.1*u.nm)
+            aux_sa = Spectrum(flux=dsB_matrix[j] *u.Jy, spectral_axis=wlprime_A *0.1*u.nm)
             aux2_sa = spline3(aux_sa, new_disp_grid*0.1*u.nm)
             fa_dop = aux2_sa.flux.value
             #Replace np.nan values for the nearest element
@@ -725,13 +725,13 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=No
 #STEP 5: calculate B.fits
         for j in range(nimg):
             wlprime_A = new_disp_grid * np.sqrt((1.+vra_array[j]/299792.458)/(1.-vra_array[j]/299792.458))
-            aux_sa = Spectrum1D(flux=A*u.Jy, spectral_axis=wlprime_A *0.1*u.nm)
+            aux_sa = Spectrum(flux=A*u.Jy, spectral_axis=wlprime_A *0.1*u.nm)
             aux2_sa = spline3(aux_sa, new_disp_grid*0.1*u.nm)
             fa_dop = aux2_sa.flux.value
             fa_dop =  splineclean(fa_dop)
             dsA_matrix[j] = obs_matrix[j] - fa_dop
             wlprime_B = new_disp_grid * np.sqrt((1.-vrb_array[j]/299792.458)/(1.+vrb_array[j]/299792.458))
-            aux_sb = Spectrum1D(flux=dsA_matrix[j]*u.Jy, spectral_axis=wlprime_B*0.1*u.nm)
+            aux_sb = Spectrum(flux=dsA_matrix[j]*u.Jy, spectral_axis=wlprime_B*0.1*u.nm)
             aux2_sb = spline3(aux_sb, new_disp_grid*0.1*u.nm)
             fb_dop = aux2_sb.flux.value
             zb_matrix[j] = splineclean(fb_dop)
@@ -742,7 +742,7 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=No
 #STEP 6: obs - B.fits
         for j in range(nimg):
             wlprime_B = new_disp_grid * np.sqrt((1.+vrb_array[j]/299792.458)/(1.-vrb_array[j]/299792.458))
-            aux_sb = Spectrum1D(flux=B*u.Jy, spectral_axis=wlprime_B *0.1*u.nm)
+            aux_sb = Spectrum(flux=B*u.Jy, spectral_axis=wlprime_B *0.1*u.nm)
             aux2_sb = spline3(aux_sb, new_disp_grid*0.1*u.nm)
             fb_dop = aux2_sb.flux.value
             dsB_matrix[j] = obs_matrix[j] - splineclean(fb_dop)
@@ -790,6 +790,7 @@ def splot(file,xmin=None,xmax=None,ymin=None,ymax=None, scale= 1., markpix=False
     if markpix:
         plt.plot(w,f*scale,marker='.',markersize=2,color='black',linestyle='')
     plt.tight_layout()
+    return w,f
 ################################################################
 ################################################################
 ################################################################
@@ -854,7 +855,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
         htmp.close(output_verify='ignore')
         wt1,ft1 = pyasl.read1dFitsSpec(tmp)
         temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
-        aux_tmp1 = Spectrum1D(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
+        aux_tmp1 = Spectrum(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
         template1=splineclean(aux2_tmp1.flux.value*fmask)
         matrix_tmp[k]=template1
@@ -886,7 +887,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
             aux1=str(round(xq,len(str(deltaq+1))-2)).replace('.','')
             wimg,fimg = pyasl.read1dFitsSpec('B'+aux1+'.fits')
             spec_cont=continuum(wimg, fimg, type='diff',lo=2.5,hi=3.5, graph=False)
-            aux_img = Spectrum1D(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
+            aux_img = Spectrum(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
             aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
             matrix_sq[j] = splineclean(aux2_img.flux.value)*fmask
         #Load calculated tt values from templates
@@ -953,7 +954,7 @@ def uniform(lis,interac=True):
         vra = hdul[0].header['VRA']
         hdul.close(output_verify='ignore')
         w2 = wimg * np.sqrt((1.-vra/299792.458)/(1.+vra/299792.458))
-        aux_img = Spectrum1D(flux=fimg *u.Jy, spectral_axis=w2 *0.1*u.nm)
+        aux_img = Spectrum(flux=fimg *u.Jy, spectral_axis=w2 *0.1*u.nm)
         aux_img2 = spline3(aux_img,new_disp_grid*0.1*u.nm)
         if interac:
             fig = plt.figure(figsize=[15,8])
@@ -992,14 +993,14 @@ def uniform(lis,interac=True):
         wv,fl = pyasl.read1dFitsSpec(img)
         rp=np.where(fl ==0)
         fl[rp]=np.mean(fl)
-        aux_spec = Spectrum1D(flux=fl *u.Jy, spectral_axis=wv *0.1*u.nm)
+        aux_spec = Spectrum(flux=fl *u.Jy, spectral_axis=wv *0.1*u.nm)
         spec = spline3(aux_spec, grid2*0.1*u.nm)
         fs=splineclean(spec.flux.value)
         hdul = fits.open(img, 'update')
         vra = hdul[0].header['VRA']
         hdul.close(output_verify='ignore')
         grid_aux = new_disp_grid * np.sqrt((1.+vra/299792.458)/(1.-vra/299792.458))
-        aux_smean = Spectrum1D(flux=smean1 *u.Jy, spectral_axis=grid_aux *0.1*u.nm)
+        aux_smean = Spectrum(flux=smean1 *u.Jy, spectral_axis=grid_aux *0.1*u.nm)
         aux_smean2 = spline3(aux_smean,grid2*0.1*u.nm)
         smean2=splineclean(aux_smean2.flux.value)
         s1=fs/smean2
@@ -1211,7 +1212,7 @@ def continuum(w,f, order=12, type='fit', lo=2, hi=3, nit=10, graph=True):
             break
         nrej1=nrej
         i=i+1
-    s1=Spectrum1D(flux=c0*u.Jy, spectral_axis=w_cont*0.1*u.nm) 
+    s1=Spectrum(flux=c0*u.Jy, spectral_axis=w_cont*0.1*u.nm) 
     c1= fit_continuum(s1, model=Chebyshev1D(order),fitter=LinearLSQFitter())
     if type=='fit':
         fout=c1(w*0.1*u.nm).value
@@ -1285,16 +1286,16 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
     dlog = aux_grid[-1] - aux_grid[-2]
     new_log_grid=np.arange(aux_grid[0],aux_grid[-1],dlog)
     #rescale mask
-    aux_mask = Spectrum1D(flux=mask*u.Jy, spectral_axis=np.log(w)*0.1*u.nm)
+    aux_mask = Spectrum(flux=mask*u.Jy, spectral_axis=np.log(w)*0.1*u.nm)
     aux2_mask= spline3(aux_mask, new_log_grid*0.1*u.nm)
     log_mask = splineclean(aux2_mask.flux.value)
     #rescale image spectrum
-    aux_img = Spectrum1D(flux=fci*u.Jy, spectral_axis=np.log(w)*0.1*u.nm)
+    aux_img = Spectrum(flux=fci*u.Jy, spectral_axis=np.log(w)*0.1*u.nm)
     aux2_img = spline3(aux_img, new_log_grid*0.1*u.nm)
     log_img=splineclean(aux2_img.flux.value)
     fi2=log_img*log_mask
     #rescale template spectrum
-    aux_sa = Spectrum1D(flux=fct*u.Jy, spectral_axis=np.log(wt)*0.1*u.nm)
+    aux_sa = Spectrum(flux=fct*u.Jy, spectral_axis=np.log(wt)*0.1*u.nm)
     aux2_sa = spline3(aux_sa, new_log_grid*0.1*u.nm)
     log_tmp = splineclean(aux2_sa.flux.value)
     ft2=log_tmp*log_mask
