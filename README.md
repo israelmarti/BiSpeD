@@ -12,7 +12,7 @@ The BiSpeD (v1.4) code allows to estimate the mass ratio among companions (*q*-v
 BiSpeD is distributed on PyPI as a universal wheel and is available on Linux/macOS and Windows and supports Python 3.12.
 
 ```bash
-pip install bisped
+pip install git+https://github.com/israelmarti/bisped#egg=bisped
 ```
 For optimized interactive useful run from [IPython](https://ipython.org/install.html).
 
