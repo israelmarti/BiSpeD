@@ -437,7 +437,7 @@ def rvbina(lis, spa='A', spb='B', ta='templateA', tb='templateB',
                 del_b =  tbdul[0].header['CDELT1']
                 tbdul.close(output_verify='ignore')
                 del_img = hdul[0].header['CDELT1']
-                delta=np.min([del_a,del_b,del_img])
+                delta=np.max([del_a,del_b,del_img])
                 winf=max(wimg[0],wta[0],wtb[0])
                 wsup=min(wimg[-1],wta[-1],wtb[-1])
                 new_disp_grid,fmask = setregion(wreg,delta,winf,wsup)
@@ -604,7 +604,7 @@ def setrvs(lis, ta='templateA', tb=None, wreg='4000-4090,4110-4320,4360-4850,487
             wmaxs.append(wimg[-1])      
             winf=max(wmins)
             wsup=min(wmaxs)
-            delta=np.min([deltamin])
+            delta=np.max([deltamin])
             new_disp_grid,fmask = setregion(wreg,delta,winf,wsup)
         aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
         aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
