@@ -187,7 +187,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
     print('')
     #create fading mask
     dlist=[]
-    hobs = fits.open(larch[0], 'update')
+    hobs = fits.open(larch[0], mode='readonly')
     d1 = hobs[0].header['CDELT1']
     dlist.append(d1)
     try:
@@ -196,7 +196,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
     except KeyError:
         obj1='NoObject'
     hobs.close(output_verify='ignore')
-    htmp = fits.open(ltemp[0], 'update')
+    htmp = fits.open(ltemp[0], mode='readonly')
     d2 = htmp[0].header['CDELT1']
     dlist.append(d2)
     htmp.close(output_verify='ignore')
@@ -226,7 +226,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
     matrix_cc=np.zeros(shape=(len(ltemp),len(q_array)))
     bar2 = ChargingBar('Comparing templates:', max=len(ltemp))
     for k,tmp in enumerate(ltemp):
-        htmp = fits.open(tmp, 'update')
+        htmp = fits.open(tmp, mode='readonly')
         teff= htmp[0].header['TEFF']
         vector_t[k]=teff
         htmp.close(output_verify='ignore')
@@ -247,7 +247,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
     if auxout:
         os.remove(obj1+'_vg_'+vgindex+'.fits')
     fits.writeto(obj1+'_vg_'+vgindex+'.fits',matrix_cc,overwrite=True)
-    hcc = fits.open(obj1+'_vg_'+vgindex+'.fits', 'update')
+    hcc = fits.open(obj1+'_vg_'+vgindex+'.fits', mode='update')
     hcc[0].header['Q0'] = qmin
     hcc[0].header['Q1'] = qmax
     hcc[0].header['DELTA_Q'] = deltaq
@@ -271,7 +271,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
     #best_B=matrix_sq[iq2]
     rvblist=[]
     for img in larch:
-        hdul = fits.open(img, 'update')
+        hdul = fits.open(img, mode='readonly')
         vra = hdul[0].header['VRA']
         vrb = vgamma - (vra-vgamma)/q_array[iq2]
         rvblist.append(round(vrb,3))
@@ -318,7 +318,7 @@ def hselect(img,fields):
     larch=makelist(img)
     s1=fields.split(',')
     for i,img in enumerate(larch):
-        hdul = fits.open(img)
+        hdul = fits.open(img,mode='readonly')
         print(img,end='\t')
         for j,ky in enumerate(s1):
             try:
@@ -338,7 +338,7 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
     ltemp=sorted(listmp(lit))
     #create fading mask
     dlist=[]
-    hobs = fits.open(img, 'update')
+    hobs = fits.open(img, mode='readonly')
     d1 = hobs[0].header['CDELT1']
     dlist.append(d1)
     try:
@@ -347,7 +347,7 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
     except KeyError:
         obj1='NoObject'
     hobs.close(output_verify='ignore')
-    htmp = fits.open(ltemp[0], 'update')
+    htmp = fits.open(ltemp[0], mode='readonly')
     d2 = htmp[0].header['CDELT1']
     dlist.append(d2)
     htmp.close(output_verify='ignore')
@@ -367,7 +367,7 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
     matrix_cc=np.zeros(len(ltemp))
     bar2 = ChargingBar('Comparing templates:', max=len(ltemp))
     for k,tmp in enumerate(ltemp):
-        htmp = fits.open(tmp, 'update')
+        htmp = fits.open(tmp, mode='readonly')
         teff= htmp[0].header['TEFF']
         vector_t[k]=teff
         htmp.close(output_verify='ignore')
@@ -635,7 +635,7 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=No
     VerifyWarning('ignore')
     larch=makelist(lis)
     nimg=len(larch)
-    haux = fits.open(larch[0], 'update')
+    haux = fits.open(larch[0], mode='readonly')
     delta = haux[0].header['CDELT1']
     xwmin=[]
     xwmax=[]
@@ -681,7 +681,7 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=No
     vra_array = np.zeros(nimg)
     vrb_array = np.zeros(nimg)
     for img in larch:
-        hdul = fits.open(img, 'update')
+        hdul = fits.open(img, mode='readonly')
         vra = hdul[0].header['VRA']
         hdul.close(output_verify='ignore')
         if q==None:
@@ -824,7 +824,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
     q_array=np.arange(round(qmin,7),round(qmax+deltaq,7),round(deltaq,7))
     #Create fading mask
     dlist=[]
-    hobs = fits.open(larch[0], 'update')
+    hobs = fits.open(larch[0], mode='readonly')
     d1 = hobs[0].header['CDELT1']
     dlist.append(d1)
     try:
@@ -833,7 +833,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
     except KeyError:
         obj1='NoObject'
     hobs.close(output_verify='ignore')
-    htmp = fits.open(ltemp[0], 'update')
+    htmp = fits.open(ltemp[0], mode='readonly')
     d2 = htmp[0].header['CDELT1']
     dlist.append(d2)
     htmp.close(output_verify='ignore')
@@ -849,7 +849,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
     matrix_tmp=np.zeros(shape=(len(ltemp),len(new_disp_grid)))
     bar2 = ChargingBar('Loading templates:', max=len(ltemp))
     for k,tmp in enumerate(ltemp):
-        htmp = fits.open(tmp, 'update')
+        htmp = fits.open(tmp, mode='readonly')
         teff= htmp[0].header['TEFF']
         vector_t[k]=teff
         htmp.close(output_verify='ignore')
@@ -900,7 +900,7 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
         bar0.next()
         #save matrix_cc in FITS file
         fits.writeto(outfolder+'/'+obj1+'_vg_'+vgindex+'.fits',matrix_cc,overwrite=True)
-        hcc = fits.open(outfolder+'/'+obj1+'_vg_'+vgindex+'.fits', 'update')
+        hcc = fits.open(outfolder+'/'+obj1+'_vg_'+vgindex+'.fits', mode='update')
         hcc[0].header['Q0'] = qmin
         hcc[0].header['Q1'] = qmax
         hcc[0].header['DELTA_Q'] = deltaq
@@ -932,7 +932,7 @@ def uniform(lis,interac=True):
     VerifyWarning('ignore')
     larch=makelist(lis)
     #Calculate mean spectrum
-    hobs = fits.open(larch[0], 'update')
+    hobs = fits.open(larch[0], mode='readonly')
     dx= hobs[0].header['CDELT1']
     xwmin=[]
     xwmax=[]
@@ -950,7 +950,7 @@ def uniform(lis,interac=True):
         wimg,fimg = pyasl.read1dFitsSpec(img)
         rp=np.where(fimg ==0)
         fimg[rp]=np.mean(fimg)
-        hdul = fits.open(img, 'update')
+        hdul = fits.open(img, mode='readonly')
         vra = hdul[0].header['VRA']
         hdul.close(output_verify='ignore')
         w2 = wimg * np.sqrt((1.-vra/299792.458)/(1.+vra/299792.458))
@@ -996,7 +996,7 @@ def uniform(lis,interac=True):
         aux_spec = Spectrum(flux=fl *u.Jy, spectral_axis=wv *0.1*u.nm)
         spec = spline3(aux_spec, grid2*0.1*u.nm)
         fs=splineclean(spec.flux.value)
-        hdul = fits.open(img, 'update')
+        hdul = fits.open(img, mode='readonly')
         vra = hdul[0].header['VRA']
         hdul.close(output_verify='ignore')
         grid_aux = new_disp_grid * np.sqrt((1.+vra/299792.458)/(1.-vra/299792.458))
@@ -1022,7 +1022,7 @@ def vexplore(folder):
     vgdicc = {}
     for xf in nfiles:
         if os.path.isfile(os.path.join(folder, xf)) and xf.endswith('.fits'):
-            hdul = fits.open(folder+'/'+xf, 'update')
+            hdul = fits.open(folder+'/'+xf, mode='readonly')
             xvg=hdul[0].header['VGAMMA']
             hdul.close(output_verify='ignore')
             vgdicc[xf]=xvg
@@ -1034,7 +1034,7 @@ def vexplore(folder):
     tall=[]
     ccall=[]
     for i,img in enumerate(vgd_sort):
-        hdul = fits.open(folder+'/'+img[0], 'update')
+        hdul = fits.open(folder+'/'+img[0], mode='readonly')
         #make array for q
         qmin=hdul[0].header['Q0']
         qmax=hdul[0].header['Q1']
@@ -1454,8 +1454,8 @@ def splineclean(fspl):
     return(fspl)
 
 def copyheader(img1,imgout):
-    hdul = fits.open(img1, 'update')
-    hnorm =  fits.open(imgout, 'update')
+    hdul = fits.open(img1, mode='readonly')
+    hnorm =  fits.open(imgout, mode='readonly')
     listk=('CDELT1','CTYPE1','BUNIT','ORIGIN','DATE','TELESCOP','INSTRUME',
            'OBJECT','RA','DEC','EQUINOX','RADECSYS','EXPTIME','MJD-OBS','DATE-OBS','UTC','LST',
            'PI-COI','CTYPE1','CTYPE2','ORIGFILE','UT','ST','AIRMASS','VRA','VRB')
