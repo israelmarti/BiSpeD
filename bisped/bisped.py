@@ -176,13 +176,10 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
     path1=os.getcwd()
     #compute B spectrum for each element from q_array
     print('Calculating spectra...')
-    pool=Pool(processes=nproc)
     qa2=np.array_split(q_array,nproc)
-    pres=[pool.apply_async(qparallel, args= [chk,lis,larch,spa,spb,deltaq,vgamma]) for chk in qa2]
-    #pool.close()
-    #pool.join()
-    pres2 = [chk.get() for chk in pres]
-    #pool.terminate()
+    with Pool(processes=nproc) as pool:
+        pres=[pool.apply_async(qparallel, args= [chk,lis,larch,spa,spb,deltaq,vgamma]) for chk in qa2]
+        pres2 = [chk.get() for chk in pres]
     print('\nProcess completed successfully!\n')
     print('')
     #create fading mask
@@ -461,10 +458,10 @@ def rvbina(lis, spa='A', spb='B', ta='templateA', tb='templateB',
 #Set RVA if them do not exist
             if vra==None:
                 print('RV for primary component not found.')
-                setrvs(img,ta=ta,wreg=wreg,fintcont=fitcont,keyjd=keyjd) 
+                setrvs(img,ta=ta,wreg=wreg,fitcont=fitcont,keyjd=keyjd) 
             if vrb==None:
                 print('RV for secondary component not found.')
-                setrvs(img,tb=tb,wreg=wreg,fintcont=fitcont,keyjd=keyjd) 
+                setrvs(img,tb=tb,wreg=wreg,fitcont=fitcont,keyjd=keyjd) 
             wlprime_A = wa * np.sqrt((1.+vra/299792.458)/(1.-vra/299792.458))
             wlprime_B = wb * np.sqrt((1.+vrb/299792.458)/(1.-vrb/299792.458))
             aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
@@ -876,11 +873,10 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
             aux3 = os.path.isfile('A'+aux1+'.fits')
             if aux3:
                 os.remove('A'+aux1+'.fits') 
-        pool=Pool(processes=nproc)
         qa2=np.array_split(q_array,nproc)
-        pres=[pool.apply_async(qparallel, args= [chk,lis,larch,'A','B',deltaq,vgamma]) for chk in qa2]
-        pres2 = [chk.get() for chk in pres]
-        #pool.terminate()
+        with Pool(processes=nproc) as pool:
+            pres=[pool.apply_async(qparallel, args= [chk,lis,larch,'A','B',deltaq,vgamma]) for chk in qa2]
+            pres2 = [chk.get() for chk in pres]
         matrix_sq=np.zeros(shape=(len(q_array),len(new_disp_grid)))
         #Load calculated B_q spectra
         for j,xq in enumerate(q_array):
