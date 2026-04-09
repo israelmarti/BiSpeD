@@ -419,7 +419,7 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
     plt.rc('xtick', labelsize=9)
     plt.rc('ytick', labelsize=9)
     plt.ylabel("Correlation", fontsize=9)
-    plt.xlabel("Temp. [1000 K]", fontsize=9)
+    plt.xlabel("Temp. [K]", fontsize=9)
     plt.plot(vector_t, matrix_cc, marker='', ls='-', color='red')
 
 ################################################################
