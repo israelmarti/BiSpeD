@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'bisped',
   packages = ['bisped'], 
-  version = '1.4',
+  version = '1.5',
   description = 'Python script for binary spectroscopic disentangling',
   author = 'Cristian I. Martinez',
   author_email = 'cmartinez@conicet.gov.ar',
