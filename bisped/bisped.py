@@ -32,13 +32,11 @@ from os import scandir, getcwd
 from os.path import abspath
 import operator
 from scipy.fft import fft
+spline3 = SplineInterpolatedResampler()
 
-# NOTA: spline3 ya no es global - se crea dentro de cada función que lo necesita
-
-print("====================================\nBinary Spectral Disentangling (v1.4)\n====================================\n")
+print("====================================\nBinary Spectral Disentangling (v1.5)\n====================================\n")
 print("Available functions list:\n")
 print("\tfind2c\n\thselect\n\tonecomp\n\trvbina\n\trvextract\n\tsetrvs\n\tspbina\n\tsplot\n\tuniform\n\tvgrid\n\tvexplore\n\n")
-
 def help(function):
     if function.lower() == 'find2c':
         print('\nFIND2C\n\nThis task makes and writes, in FITS extension, a spectra dataset of possible secondary \
@@ -166,144 +164,122 @@ def help(function):
 ################################################################
 ################################################################
 ################################################################
-def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01, 
-           wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900', nproc=6):
-    # Crear spline3 localmente
-    from specutils.manipulation import SplineInterpolatedResampler
-    spline3 = SplineInterpolatedResampler()
-    
+def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900',nproc=6):
     plt.ion()
     print('\n\tRunning FIND2C\n')
     VerifyWarning('ignore')
-    larch = makelist(lis)
+    larch=makelist(lis)
     if lit[len(lit)-1] == '/':
-        lit = lit[0:len(lit)-1]
-    ltemp = sorted(listmp(lit))
-    q_array = np.arange(round(qmin,7), round(qmax+deltaq,7), round(deltaq,7))
-    path1 = os.getcwd()
-    
-    # compute B spectrum for each element from q_array
+        lit=lit[0:len(lit)-1]
+    ltemp=sorted(listmp(lit))
+    q_array=np.arange(round(qmin,7),round(qmax+deltaq,7),round(deltaq,7))
+    path1=os.getcwd()
+    #compute B spectrum for each element from q_array
     print('Calculating spectra...')
-    qa2 = np.array_split(q_array, nproc)
+    qa2=np.array_split(q_array,nproc)
     with Pool(processes=nproc) as pool:
         pres=[pool.apply_async(qparallel, args= [chk,lis,larch,spa,spb,deltaq,vgamma]) for chk in qa2]
         pres2 = [chk.get() for chk in pres]
-    
     print('\nProcess completed successfully!\n')
     print('')
-    
-    # create fading mask
-    dlist = []
-    # CORREGIDO: usar with y readonly
-    with fits.open(larch[0], mode='readonly') as hobs:
-        d1 = hobs[0].header['CDELT1']
-        dlist.append(d1)
-        try:
-            obj1 = hobs[0].header['OBJECT']
-            obj1 = obj1.replace(' ', '')
-        except KeyError:
-            obj1 = 'NoObject'
-    
-    # CORREGIDO
-    with fits.open(ltemp[0], mode='readonly') as htmp:
-        d2 = htmp[0].header['CDELT1']
-        dlist.append(d2)
-    
-    waux1, faux1 = pyasl.read1dFitsSpec(larch[0])
-    waux2, faux2 = pyasl.read1dFitsSpec(ltemp[0])
-    
-    # gap expressed wavelength margins in pixels
-    gap = 50
-    winf = max(waux1[0], waux2[0]) + gap
-    wsup = min(waux1[-1], waux2[-1]) - gap
-    new_disp_grid, fmask = setregion(wreg, np.max(dlist), winf, wsup)
-    
-    # Apply mask over B//q spectra (filtering and apodizing)
-    matrix_sq = np.zeros(shape=(len(q_array), len(new_disp_grid)))
+    #create fading mask
+    dlist=[]
+    hobs = fits.open(larch[0], mode='readonly')
+    d1 = hobs[0].header['CDELT1']
+    dlist.append(d1)
+    try:
+        obj1 = hobs[0].header['OBJECT']
+        obj1=obj1.replace(' ','')
+    except KeyError:
+        obj1='NoObject'
+    hobs.close(output_verify='ignore')
+    htmp = fits.open(ltemp[0], mode='readonly')
+    d2 = htmp[0].header['CDELT1']
+    dlist.append(d2)
+    htmp.close(output_verify='ignore')
+    waux1,faux1 = pyasl.read1dFitsSpec(larch[0])
+    waux2,faux2 = pyasl.read1dFitsSpec(ltemp[0])
+    #gap expresed wavelenght magins in pixels
+    gap=50
+    winf=max(waux1[0],waux2[0])+gap
+    wsup=min(waux1[-1],waux2[-1])-gap
+    new_disp_grid,fmask = setregion(wreg,np.max(dlist),winf,wsup)
+    #Apply mask over B//q spectra (filtering and apodizing)
+    matrix_sq=np.zeros(shape=(len(q_array),len(new_disp_grid)))
     bar1 = ChargingBar('Loading B_q spectra:', max=len(q_array))
-    for j, xq in enumerate(q_array):
-        aux1 = str(round(xq, len(str(deltaq+1))-2)).replace('.', '')
-        wimg, fimg = pyasl.read1dFitsSpec(spb + aux1 + '.fits')
-        spec_cont = continuum(wimg, fimg, type='diff', nit=5, lo=2.5, hi=3.5, graph=False)
+    for j,xq in enumerate(q_array):
+        aux1=str(round(xq,len(str(deltaq+1))-2)).replace('.','')
+        wimg,fimg = pyasl.read1dFitsSpec(spb+aux1+'.fits')
+        spec_cont=continuum(wimg, fimg, type='diff', nit=5, lo=2.5,hi=3.5, graph=False)
         aux_img = Spectrum(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
         aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
-        matrix_sq[j] = splineclean(aux2_img.flux.value) * fmask
+        matrix_sq[j] = splineclean(aux2_img.flux.value)*fmask
         bar1.next()
     bar1.finish()
     print('')
-    
-    norma_b = np.max(np.mean(matrix_sq**2, axis=1))
-    
-    # Cross correlation between each spectrum and B//q
-    vector_t = np.zeros(len(ltemp))
-    matrix_cc = np.zeros(shape=(len(ltemp), len(q_array)))
+    norma_b=np.max(np.mean(matrix_sq**2,axis=1))
+    #Cross correlation between each spectrum and B//q
+    vector_t=np.zeros(len(ltemp))
+    matrix_cc=np.zeros(shape=(len(ltemp),len(q_array)))
     bar2 = ChargingBar('Comparing templates:', max=len(ltemp))
-    for k, tmp in enumerate(ltemp):
-        # CORREGIDO
-        with fits.open(tmp, mode='readonly') as htmp:
-            teff = htmp[0].header['TEFF']
-            vector_t[k] = teff
-        
-        wt1, ft1 = pyasl.read1dFitsSpec(tmp)
-        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2, hi=4, graph=False)
+    for k,tmp in enumerate(ltemp):
+        htmp = fits.open(tmp, mode='readonly')
+        teff= htmp[0].header['TEFF']
+        vector_t[k]=teff
+        htmp.close(output_verify='ignore')
+        wt1,ft1 = pyasl.read1dFitsSpec(tmp)
+        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
         aux_tmp1 = Spectrum(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
-        template1 = splineclean(aux2_tmp1.flux.value * fmask)
-        tt = np.mean(template1**2)
-        
-        for l, xq in enumerate(q_array):
-            tb = np.mean((template1 * matrix_sq[l]))
-            cc = tb/(np.sqrt(norma_b) * np.sqrt(tt))
-            matrix_cc[k, l] = cc
+        template1=splineclean(aux2_tmp1.flux.value*fmask)
+        tt=np.mean(template1**2)
+        for l,xq in enumerate(q_array):
+            tb=np.mean((template1*matrix_sq[l]))
+            cc=tb/(np.sqrt(norma_b)*np.sqrt(tt))
+            matrix_cc[k,l]=cc
         bar2.next()
-    
-    # save matrix_cc in FITS format
-    vgindex = str(vgamma)
-    auxout = os.path.isfile(obj1 + '_vg_' + vgindex + '.fits')
+    #save matrix_cc in FITS format
+    vgindex=str(vgamma)
+    auxout = os.path.isfile(obj1+'_vg_'+vgindex+'.fits')
     if auxout:
-        os.remove(obj1 + '_vg_' + vgindex + '.fits')
-    fits.writeto(obj1 + '_vg_' + vgindex + '.fits', matrix_cc, overwrite=True)
-    
-    # CORREGIDO
-    with fits.open(obj1 + '_vg_' + vgindex + '.fits', mode='update') as hcc:
-        hcc[0].header['Q0'] = qmin
-        hcc[0].header['Q1'] = qmax
-        hcc[0].header['DELTA_Q'] = deltaq
-        hcc[0].header['T0'] = vector_t[0]
-        hcc[0].header['T1'] = vector_t[-1]
-        hcc[0].header['DELTA_T'] = vector_t[1] - vector_t[0]
-        hcc[0].header['VGAMMA'] = vgamma
-        hcc[0].header['WREG'] = '4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'
-    
+        os.remove(obj1+'_vg_'+vgindex+'.fits')
+    fits.writeto(obj1+'_vg_'+vgindex+'.fits',matrix_cc,overwrite=True)
+    hcc = fits.open(obj1+'_vg_'+vgindex+'.fits', mode='update')
+    hcc[0].header['Q0'] = qmin
+    hcc[0].header['Q1'] = qmax
+    hcc[0].header['DELTA_Q'] = deltaq
+    hcc[0].header['T0'] = vector_t[0]
+    hcc[0].header['T1'] = vector_t[-1]
+    hcc[0].header['DELTA_T'] = vector_t[1]-vector_t[0]
+    hcc[0].header['VGAMMA'] = vgamma
+    hcc[0].header['WREG'] = '4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'
+    hcc.close(output_verify='ignore')
     bar2.finish()
     print('')
-    
-    # Estimate mass ratio q and effective temperature Teff according to a parabola function
-    qmed = np.max(matrix_cc, axis=0)
-    iq2 = np.where(qmed == np.max(qmed))[0][0]
-    if qmed[iq2] != qmed[0] and qmed[iq2] != qmed[-1]:
-        best_q = q_array[iq2] - (qmed[iq2+1] - qmed[iq2-1]) * deltaq / 2 / (qmed[iq2-1] + qmed[iq2+1] - 2*qmed[iq2])
+    #Estimate mass ratio q and effective temperature Teff for according to a parabole function
+    qmed=np.max(matrix_cc,axis=0)
+    iq2=np.where(qmed == np.max(qmed))[0][0]
+    if qmed[iq2] !=qmed[0] and qmed[iq2] !=qmed[-1]:
+        best_q = q_array[iq2]-(qmed[iq2+1]-qmed[iq2-1])*deltaq/2/(qmed[iq2-1]+qmed[iq2+1]-2*qmed[iq2])
     else:
-        best_q = q_array[iq2]
-    
-    tmed = np.max(matrix_cc, axis=1)
-    jt2 = np.argmax(tmed)
-    
-    rvblist = []
+        best_q=q_array[iq2]
+    tmed=np.max(matrix_cc,axis=1)
+    jt2=np.argmax(tmed)
+    #best_B=matrix_sq[iq2]
+    rvblist=[]
     for img in larch:
-        # CORREGIDO
-        with fits.open(img, mode='readonly') as hdul:
-            vra = hdul[0].header['VRA']
-            vrb = vgamma - (vra - vgamma)/q_array[iq2]
-            rvblist.append(round(vrb, 3))
-    
+        hdul = fits.open(img, mode='readonly')
+        vra = hdul[0].header['VRA']
+        vrb = vgamma - (vra-vgamma)/q_array[iq2]
+        rvblist.append(round(vrb,3))
+        hdul.flush()
+        hdul.close()
     print('\t· · · · · · · · · · · · · ·')
-    print('\t  Teff=' + str(int(vector_t[jt2])) + ' K\tq = ' + str(round(best_q, 2)) + '  ')
+    print('\t  Teff='+str(int(vector_t[jt2]))+' K\tq = '+str(round(best_q,2))+'  ')
     print('\t· · · · · · · · · · · · · ·')
-    
-    # Graph results for best q and Teff
-    fig = plt.figure(figsize=[6, 7.4])
-    gs = gridspec.GridSpec(nrows=2, ncols=2, height_ratios=[7, 1])
+    #Graph results for best q and Teff
+    fig=plt.figure(figsize=[6,7.4])
+    gs = gridspec.GridSpec(nrows=2, ncols=2,height_ratios=[7, 1])
     ax0 = fig.add_subplot(gs[0, :], projection='3d')
     ax0.set_title(obj1)
     plt.rc('xtick', labelsize=9)
@@ -314,226 +290,184 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
     Z = matrix_cc
     ax0.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap='jet')
     ax1 = fig.add_subplot(gs[1, 0])
-    ax1.plot(q_array, qmed, marker='', ls='-', color='blue')
+    ax1.plot(q_array,qmed,marker='',ls='-', color='blue')
     plt.rc('xtick', labelsize=9)
     plt.rc('ytick', labelsize=9)
     ax1.set_ylabel("Correlation", fontsize=9)
     ax1.set_xlabel("Mass ratio ($q$)", fontsize=9)
     ax1.set(xlim=(min(q_array), max(q_array)))
-    plt.axvline(x=best_q, color='black', linestyle='--', linewidth=1)
+    plt.axvline(x=best_q, color='black', linestyle='--',linewidth=1)
     ax2 = fig.add_subplot(gs[1, 1])
-    ax2.plot(vector_t, tmed, marker='', ls='-', color='red')
+    ax2.plot(vector_t,tmed,marker='',ls='-', color='red')
     ax2.set_xlabel("Temp. [1000 K]", fontsize=9)
     ax2.set(xlim=(vector_t[0], vector_t[-1]))
-    plt.axvline(x=vector_t[jt2], color='black', linestyle='--', linewidth=1)
-    aux3 = os.path.isfile(obj1 + '_CC.jpeg')
+    plt.axvline(x=vector_t[jt2], color='black', linestyle='--',linewidth=1)
+    aux3 = os.path.isfile(obj1+'_CC.jpeg')
     if aux3:
-        os.remove(obj1 + '_CC.jpeg')
-    plt.savefig(path1 + '/' + obj1 + '_CC.jpeg')
+        os.remove(obj1+'_CC.jpeg')
+    plt.savefig(path1+'/'+obj1+'_CC.jpeg')
 
 ################################################################
 ################################################################
 ################################################################
-def hselect(img, fields):
+def hselect(img,fields):
     VerifyWarning('ignore')
-    larch = makelist(img)
-    s1 = fields.split(',')
-    for i, img in enumerate(larch):
-        # CORREGIDO
-        with fits.open(img, mode='readonly') as hdul:
-            print(img, end='\t')
-            for j, ky in enumerate(s1):
-                try:
-                    print(str(hdul[0].header[ky]), end='\t')
-                except KeyError:
-                    print(np.nan, end='\t')
-            print('\n')
-
+    larch=makelist(img)
+    s1=fields.split(',')
+    for i,img in enumerate(larch):
+        hdul = fits.open(img,mode='readonly')
+        print(img,end='\t')
+        for j,ky in enumerate(s1):
+            try:
+                print(str(hdul[0].header[ky]),end='\t')
+            except KeyError:
+                print(np.nan,end='\t')
+        print('\n')
+        hdul.close()
 ################################################################
 ################################################################
 ################################################################
 def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
-    # Crear spline3 localmente
-    from specutils.manipulation import SplineInterpolatedResampler
-    spline3 = SplineInterpolatedResampler()
-    
     plt.ion()
     VerifyWarning('ignore')
     if lit[len(lit)-1] == '/':
-        lit = lit[0:len(lit)-1]
-    ltemp = sorted(listmp(lit))
-    
-    # create fading mask
-    dlist = []
-    # CORREGIDO
-    with fits.open(img, mode='readonly') as hobs:
-        d1 = hobs[0].header['CDELT1']
-        dlist.append(d1)
-        try:
-            obj1 = hobs[0].header['OBJECT']
-            obj1 = obj1.replace(' ', '')
-        except KeyError:
-            obj1 = 'NoObject'
-    
-    # CORREGIDO
-    with fits.open(ltemp[0], mode='readonly') as htmp:
-        d2 = htmp[0].header['CDELT1']
-        dlist.append(d2)
-    
-    waux1, faux1 = pyasl.read1dFitsSpec(img)
-    waux2, faux2 = pyasl.read1dFitsSpec(img)
-    
-    # gap expressed wavelength margins in pixels
-    gap = 50
-    winf = max(waux1[0], waux2[0]) + gap
-    wsup = min(waux1[-1], waux2[-1]) - gap
-    new_disp_grid, fmask = setregion(wreg, np.max(dlist), winf, wsup)
-    
-    wimg, fimg = pyasl.read1dFitsSpec(img)
-    spec_cont = continuum(wimg, fimg, type='diff', nit=5, lo=2.5, hi=3.5, graph=False)
+        lit=lit[0:len(lit)-1]
+    ltemp=sorted(listmp(lit))
+    #create fading mask
+    dlist=[]
+    hobs = fits.open(img, mode='readonly')
+    d1 = hobs[0].header['CDELT1']
+    dlist.append(d1)
+    try:
+        obj1 = hobs[0].header['OBJECT']
+        obj1=obj1.replace(' ','')
+    except KeyError:
+        obj1='NoObject'
+    hobs.close(output_verify='ignore')
+    htmp = fits.open(ltemp[0], mode='readonly')
+    d2 = htmp[0].header['CDELT1']
+    dlist.append(d2)
+    htmp.close(output_verify='ignore')
+    waux1,faux1 = pyasl.read1dFitsSpec(img)
+    waux2,faux2 = pyasl.read1dFitsSpec(img)
+    #gap expresed wavelenght magins in pixels
+    gap=50
+    winf=max(waux1[0],waux2[0])+gap
+    wsup=min(waux1[-1],waux2[-1])-gap
+    new_disp_grid,fmask = setregion(wreg,np.max(dlist),winf,wsup)
+    wimg,fimg = pyasl.read1dFitsSpec(img)
+    spec_cont=continuum(wimg, fimg, type='diff', nit=5, lo=2.5,hi=3.5, graph=False)
     aux_img = Spectrum(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
     aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
-    matrix_sq = splineclean(aux2_img.flux.value) * fmask
-    
-    vector_t = np.zeros(len(ltemp))
-    matrix_cc = np.zeros(len(ltemp))
+    matrix_sq = splineclean(aux2_img.flux.value)*fmask    
+    vector_t=np.zeros(len(ltemp))
+    matrix_cc=np.zeros(len(ltemp))
     bar2 = ChargingBar('Comparing templates:', max=len(ltemp))
-    for k, tmp in enumerate(ltemp):
-        # CORREGIDO
-        with fits.open(tmp, mode='readonly') as htmp:
-            teff = htmp[0].header['TEFF']
-            vector_t[k] = teff
-        
-        wt1, ft1 = pyasl.read1dFitsSpec(tmp)
-        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2, hi=4, graph=False)
+    for k,tmp in enumerate(ltemp):
+        htmp = fits.open(tmp, mode='readonly')
+        teff= htmp[0].header['TEFF']
+        vector_t[k]=teff
+        htmp.close(output_verify='ignore')
+        wt1,ft1 = pyasl.read1dFitsSpec(tmp)
+        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
         aux_tmp1 = Spectrum(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
-        template1 = splineclean(aux2_tmp1.flux.value * fmask)
-        tt = np.mean(template1**2)
-        tb = np.mean((template1 * matrix_sq))
-        matrix_cc[k] = tb/(np.sqrt(np.mean(matrix_sq**2)) * np.sqrt(tt))
+        template1=splineclean(aux2_tmp1.flux.value*fmask)
+        tt=np.mean(template1**2)
+        tb=np.mean((template1*matrix_sq))
+        matrix_cc[k]=tb/(np.sqrt(np.mean(matrix_sq**2))*np.sqrt(tt))
         bar2.next()
     bar2.finish()
-    
     plt.figure()
     plt.rc('xtick', labelsize=9)
     plt.rc('ytick', labelsize=9)
     plt.ylabel("Correlation", fontsize=9)
-    plt.xlabel("Temp. [K]", fontsize=9)
-    plt.plot(vector_t, matrix_cc, marker='', ls='-', color='red')
-
+    plt.xlabel("Temp. [1000 K]", fontsize=9)
+    plt.plot(vector_t,matrix_cc,marker='',ls='-', color='red')
 ################################################################
 ################################################################
 ################################################################
 def rvbina(lis, spa='A', spb='B', ta='templateA', tb='templateB', 
            wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900', 
-           aconv=0.5, keyjd='MJD-OBS', fitcont=True, interac=True):
-    # Crear spline3 localmente
-    from specutils.manipulation import SplineInterpolatedResampler
-    spline3 = SplineInterpolatedResampler()
-    
+           aconv=0.5, keyjd='MJD-OBS', fitcont=True,interac=True):
     plt.ioff()
+    spline3 = SplineInterpolatedResampler()
     VerifyWarning('ignore')
-    larch = makelist(lis)
-    
-    # read spectra
-    ta = ta.replace('.fits', '')
-    tb = tb.replace('.fits', '')
-    aaux1 = os.path.isfile(ta + '.fits')
-    baux1 = os.path.isfile(tb + '.fits')
-    if not aaux1:
+    larch=makelist(lis)
+    #read spectra
+    ta = ta.replace('.fits','')
+    tb = tb.replace('.fits','')
+    aaux1 = os.path.isfile(ta+'.fits')
+    baux1 = os.path.isfile(tb+'.fits')
+    if aaux1 == False:
         print('Can not access to primary template spectrum')
         print('END')
-        return
-    if not baux1:
+    if baux1 == False:
         print('Can not access to secondary template spectrum')
         print('END')
-        return
-    
-    aaux2 = os.path.isfile(spa + '.fits')
-    baux2 = os.path.isfile(spb + '.fits')
-    if not aaux2:
-        print('Can not access to ' + spa + '.fits')
+    aaux2 = os.path.isfile(spa+'.fits')
+    baux2 = os.path.isfile(spb+'.fits')
+    if aaux2 == False:
+        print('Can not access to '+spa+'.fits')
         print('END')
-        return
-    if not baux2:
-        print('Can not access to ' + spb + '.fits')
+    if baux2 == False:
+        print('Can not access to '+spb+'.fits')
         print('END')
-        return
-    
-    # check each spectrum access
+    #check each spectrum access
     if aaux1 and baux1 and aaux2 and baux2:
-        for k, img in enumerate(larch):
+        for k,img in enumerate(larch):
             print('::::::::::::::::::::::::::::::::::::::::::::::::::::::::')
-            print('Processing ' + img + '...\n')
-            wimg, fimg = pyasl.read1dFitsSpec(img)
-            
-            # CORREGIDO: usar with para update
-            with fits.open(img, mode='update') as hdul:
-                if k == 0:
-                    # read components mean spectra
-                    wa, fa = pyasl.read1dFitsSpec(spa + '.fits')
-                    wb, fb = pyasl.read1dFitsSpec(spb + '.fits')
-                    # read templates
-                    wta, fta = pyasl.read1dFitsSpec(ta + '.fits')
-                    with fits.open(ta + '.fits', mode='readonly') as tadul:
-                        del_a = tadul[0].header['CDELT1']
-                    wtb, ftb = pyasl.read1dFitsSpec(tb + '.fits')
-                    with fits.open(tb + '.fits', mode='readonly') as tbdul:
-                        del_b = tbdul[0].header['CDELT1']
-                    del_img = hdul[0].header['CDELT1']
-                    delta = np.max([del_a, del_b, del_img])
-                    winf = max(wimg[0], wta[0], wtb[0])
-                    wsup = min(wimg[-1], wta[-1], wtb[-1])
-                    new_disp_grid, fmask = setregion(wreg, delta, winf, wsup)
-                    try:
-                        obj1 = hdul[0].header['OBJECT']
-                    except KeyError:
-                        obj1 = 'NoObject'
-                
-                # read RV for each component
+            print('Processing '+img+'...\n')
+            wimg,fimg = pyasl.read1dFitsSpec(img)
+            hdul = fits.open(img, 'update')
+            if k==0:
+                #read components mean spectra
+                wa,fa = pyasl.read1dFitsSpec(spa+'.fits')
+                wb,fb = pyasl.read1dFitsSpec(spb+'.fits')
+                #read templates
+                wta, fta = pyasl.read1dFitsSpec(ta+'.fits')
+                tadul = fits.open(ta+'.fits', mode='readonly')
+                del_a = tadul[0].header['CDELT1']
+                tadul.close(output_verify='ignore')
+                wtb, ftb = pyasl.read1dFitsSpec(tb+'.fits')
+                tbdul = fits.open(tb+'.fits', mode='readonly')
+                del_b =  tbdul[0].header['CDELT1']
+                tbdul.close(output_verify='ignore')
+                del_img = hdul[0].header['CDELT1']
+                delta=np.max([del_a,del_b,del_img])
+                winf=max(wimg[0],wta[0],wtb[0])
+                wsup=min(wimg[-1],wta[-1],wtb[-1])
+                new_disp_grid,fmask = setregion(wreg,delta,winf,wsup)
                 try:
-                    vra = hdul[0].header['VRA']
+                    obj1 = hdul[0].header['OBJECT']
                 except KeyError:
-                    vra = None
-                try:
-                    vrb = hdul[0].header['VRB']
-                except KeyError:
-                    vrb = None
-                try:
-                    xjd = hdul[0].header[keyjd]
-                except KeyError:
-                    xjd = np.nan
-            
-            # Set RVA if they do not exist
-            if vra is None:
+                    obj1='NoObject'
+            #read RV for each component
+            try:
+                vra = hdul[0].header['VRA']
+            except KeyError:
+                vra = None
+            try:
+                vrb = hdul[0].header['VRB']
+            except KeyError:
+                vrb = None
+            try:
+                xjd = hdul[0].header[keyjd]
+            except KeyError:
+                xjd = np.nan
+#Set RVA if them do not exist
+            if vra==None:
                 print('RV for primary component not found.')
-                setrvs(img, ta=ta, wreg=wreg, fitcont=fitcont, keyjd=keyjd)
-                # Re-read after setting
-                with fits.open(img, mode='readonly') as hdul:
-                    vra = hdul[0].header['VRA']
-            if vrb is None:
+                setrvs(img,ta=ta,wreg=wreg,fitcont=fitcont,keyjd=keyjd) 
+            if vrb==None:
                 print('RV for secondary component not found.')
-                setrvs(img, tb=tb, wreg=wreg, fitcont=fitcont, keyjd=keyjd)
-                with fits.open(img, mode='readonly') as hdul:
-                    vrb = hdul[0].header['VRB']
-            
-            # Verificar orden monótono
-            wlprime_A = wa * np.sqrt((1. + vra/299792.458)/(1. - vra/299792.458))
-            if not np.all(np.diff(wlprime_A) > 0):
-                idx = np.argsort(wlprime_A)
-                wlprime_A = wlprime_A[idx]
-            
-            wlprime_B = wb * np.sqrt((1. + vrb/299792.458)/(1. - vrb/299792.458))
-            if not np.all(np.diff(wlprime_B) > 0):
-                idx = np.argsort(wlprime_B)
-                wlprime_B = wlprime_B[idx]
-            
+                setrvs(img,tb=tb,wreg=wreg,fitcont=fitcont,keyjd=keyjd) 
+            wlprime_A = wa * np.sqrt((1.+vra/299792.458)/(1.-vra/299792.458))
+            wlprime_B = wb * np.sqrt((1.+vrb/299792.458)/(1.-vrb/299792.458))
             aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
             aux_sa = Spectrum(flux=fa*u.Jy, spectral_axis=wlprime_A*0.1*u.nm)
             aux_sb = Spectrum(flux=fb*u.Jy, spectral_axis=wlprime_B*0.1*u.nm)
-            
-            # Resampling of each spectrum (linear interpolation) with the template grid dispersion
+            #Resampling of each spectrum (lineal interpolation) with the template grid dispersion
             aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
             aux2_sa = spline3(aux_sa, new_disp_grid*0.1*u.nm)
             aux2_sb = spline3(aux_sb, new_disp_grid*0.1*u.nm)
@@ -541,565 +475,491 @@ def rvbina(lis, spa='A', spb='B', ta='templateA', tb='templateB',
             dsA = splineclean(dsA)
             dsB = aux2_img.flux.value - aux2_sb.flux.value
             dsB = splineclean(dsB)
-            
             print('Cross-correlation for primary component\n')
-            best_vra, aerr, asave = fxcor(new_disp_grid, dsB, wta, fta, fmask, fitcont=fitcont, interac=interac)
+            best_vra,aerr,asave=fxcor(new_disp_grid,dsB,wta,fta,fmask,fitcont=fitcont,interac=interac)
             print('Cross-correlation for secondary component\n')
-            best_vrb, berr, bsave = fxcor(new_disp_grid, dsA, wtb, ftb, fmask, fitcont=fitcont, interac=interac)
-            
-            # Save new RVA values to the FITS files
-            with fits.open(img, mode='update') as hdul:
-                if asave:
-                    new_vra = best_vra * aconv + vra * (1 - aconv)
-                    err_a = np.abs(new_vra - vra)
-                    hdul[0].header['VRA'] = round(new_vra, 6)
-                    print(img + ', VRA: ' + str(round(vra, 3)) + ' km/s --> ' + str(round(new_vra, 3)) + ' km/s')
-                else:
-                    new_vra = vra
-                    err_a = 0
-                if bsave:
-                    new_vrb = best_vrb * aconv + vrb * (1 - aconv)
-                    err_b = np.abs(new_vrb - vrb)
-                    hdul[0].header['VRB'] = round(new_vrb, 6)
-                    print(img + ', VRB: ' + str(round(vrb, 3)) + ' km/s --> ' + str(round(new_vrb, 3)) + ' km/s')
-                else:
-                    new_vrb = vrb
-                    err_b = 0
-            
-            name = img.replace('.fits', '')
-            if not os.path.isfile(name + '.log'):
-                with open(name + '.log', 'w') as flog:
-                    flog.write('#RV_A\te_it_A\tRV_B\te_it_B\n')
-            with open(name + '.log', 'a') as flog:
-                flog.write(str(round(new_vra, 6)) + '\t' + str(round(err_a, 6)) + '\t' + 
-                          str(round(new_vrb, 6)) + '\t' + str(round(err_b, 6)) + '\n')
-            
-            # create vr.txt output file
-            if not os.path.isfile(obj1 + '_RV.txt'):
-                with open(obj1 + '_RV.txt', 'w') as frv:
-                    frv.write('#JD\tRV_A\te_A\tRV_B\te_B\n')
-            with open(obj1 + '_RV.txt', 'a') as frv:
-                frv.write(str(xjd) + '\t' + str(round(new_vra, 6)) + '\t' + 
-                         str(round(err_a, 6)) + '\t' + str(round(new_vrb, 6)) + '\t' + str(round(err_b, 6)) + '\n')
-
+            best_vrb,berr,bsave=fxcor(new_disp_grid,dsA,wtb,ftb,fmask,fitcont=fitcont,interac=interac)
+            #Save new RVA values to the FITS files
+            if asave:
+                new_vra = best_vra * aconv + vra * (1 - aconv)
+                err_a = np.abs(new_vra - vra)
+                hdul[0].header['VRA'] = round(new_vra,6)
+                print(img+', VRA: '+str(round(vra,3))+' km/s --> '+str(round(new_vra,3))+' km/s')
+            else:
+                new_vra=vra
+                err_a=0
+            if bsave:
+                new_vrb = best_vrb * aconv + vrb * (1 - aconv)
+                err_b = np.abs(new_vrb - vrb)
+                hdul[0].header['VRB'] = round(new_vrb,6)
+                print(img+', VRB: '+str(round(vrb,3))+' km/s --> '+str(round(new_vrb,3))+' km/s')
+            else:
+                new_vrb=vrb
+                err_b=0
+            hdul.flush(output_verify='ignore')
+            hdul.close(output_verify='ignore')
+            name=img.replace('.fits','')
+            aux2 = os.path.isfile(name+'.log')
+            if aux2 == False:
+                flog = open(name+'.log', 'w')
+                flog.write('#RV_A\te_it_A\tRV_B\te_it_B\n')
+            else:
+                flog = open(name+'.log', 'a')
+            flog.write(str(round(new_vra,6))+'\t'+str(round(err_a,6))+'\t'+str(round(new_vrb,6))+'\t'+str(round(err_b,6))+'\n')
+            flog.close()
+            #create vr.txt output file
+            aux3 = os.path.isfile(obj1+'_RV.txt')
+            if aux3 == False:
+                frv = open(obj1+'_RV.txt', 'w')
+                frv.write('#JD\tRV_A\te_A\tRV_B\te_B\n')
+            else:
+                frv = open(obj1+'_RV.txt', 'a')
+            frv.write(str(xjd)+'\t'+str(round(new_vra,6))+'\t'+str(round(err_a,6))+'\t'+str(round(new_vrb,6))+'\t'+str(round(err_b,6))+'\n')
+            frv.close()
 ################################################################
 ################################################################
 ################################################################
 def rvextract(lis, output='rv.txt', graph=True):
     plt.ion()
     plt.close()
-    larch = makelist(lis)
+    larch=makelist(lis)
     print('\t······························')
     print('\t    Press ENTER to continue') 
     print('\t      or press Q to exit')
     print('\t······························')
-    
-    with open(output, 'w') as f2:
-        f2.write('#RV_A\tRV_B\n')
-        for img in larch:
-            print('RV convergence for: ' + img)
-            name = img.replace('.fits', '')
-            a = np.loadtxt(name + '.log')
-            nit = np.arange(1, len(a) + 1, 1)
-            if graph:
-                fig = plt.figure(figsize=[8, 6])
-                ax1 = fig.add_subplot(2, 1, 1)  
-                ax1.set_title('Primary RV convergence')
-                ax1.set_xlabel('Iteration')
-                ax1.set_ylabel('Radial Velocity [km/s]')
-                ax1.plot(nit, a[:, 0], 'b-')
-                ax2 = fig.add_subplot(2, 1, 2, sharex=ax1, sharey=ax1)  
-                ax2.set_title('Secondary RV convergence')
-                ax2.set_xlabel('Iteration')
-                ax2.set_ylabel('Radial Velocity [km/s]')
-                ax2.plot(nit, a[:, 2], 'r-')
-                fig.tight_layout()
-                yours = input()
-                plt.close()
-                if yours == 'q' or yours == 'Q':
-                    break
-            f2.write(str(a[len(a)-1, 0]) + '\t' + str(a[len(a)-1, 2]) + '\n')
-
+    f2 = open(output, 'w')
+    f2.write('#RV_A\tRV_B\n')
+    for img in larch:
+        print('RV convergence for: '+img)
+        name=img.replace('.fits','')
+        a=np.loadtxt(name+'.log')
+        nit=np.arange(1,len(a)+1,1)
+        if graph:
+            fig = plt.figure(figsize=[8,6])
+            ax1 = fig.add_subplot(2, 1, 1)  
+            ax1.set_title('Primary RV convergence')
+            ax1.set_xlabel('Iteration')
+            ax1.set_ylabel('Radial Velocity [km/s]')
+            ax1.plot(nit, a[:,0], 'b-')
+            ax2 = fig.add_subplot(2, 1, 2, sharex=ax1,sharey=ax1)  
+            ax2.set_title('Secondary RV convergence')
+            ax2.set_xlabel('Iteration')
+            ax2.set_ylabel('Radial Velocity [km/s]')
+            ax2.plot(nit, a[:,2], 'r-')
+            fig.tight_layout()
+            yours = input()
+            plt.close()
+            if yours == 'q' or yours == 'Q':
+                break
+        f2.write(str(a[len(a)-1,0])+'\t'+str(a[len(a)-1,2])+'\n')
+    f2.close()
 ################################################################
 ################################################################
 ################################################################
 def setrvs(lis, ta='templateA', tb=None, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900', 
            keyjd='MJD-OBS', fitcont=True, interac=True):
-    # Crear spline3 localmente
-    from specutils.manipulation import SplineInterpolatedResampler
-    spline3 = SplineInterpolatedResampler()
-    
     plt.ioff()
+    spline3 = SplineInterpolatedResampler()
     VerifyWarning('ignore')
-    larch = makelist(lis)
-    wmins = []
-    wmaxs = []
-    deltamin = []
-    
-    # if template A exists read 
-    wta, fta = None, None
-    if ta is not None:
-        ta = ta.replace('.fits', '')
-        if os.path.isfile(ta + '.fits'):
-            wta, fta = pyasl.read1dFitsSpec(ta + '.fits')
+    larch=makelist(lis)
+    wmins=[]
+    wmaxs=[]
+    deltamin=[]
+    #if template A exists read 
+    if ta !=None:
+        ta = ta.replace('.fits','')
+        aaux1 = os.path.isfile(ta+'.fits')
+        if aaux1:
+            wta, fta = pyasl.read1dFitsSpec(ta+'.fits')
             wmins.append(wta[0])
             wmaxs.append(wta[-1])
-            with fits.open(ta + '.fits', mode='readonly') as tadul:
-                de1 = tadul[0].header['CDELT1']
-                deltamin.append(de1)
-    
-    # if template B exists read 
-    wtb, ftb = None, None
-    if tb is not None:
-        tb = tb.replace('.fits', '')
-        if os.path.isfile(tb + '.fits'):
-            wtb, ftb = pyasl.read1dFitsSpec(tb + '.fits')
+            tadul = fits.open(ta+'.fits', mode='readonly')
+            de1 = tadul[0].header['CDELT1']
+            tadul.close(output_verify='ignore')
+            deltamin.append(de1)
+    #if template B exists read 
+    if tb !=None:
+        tb = tb.replace('.fits','')
+        baux1 = os.path.isfile(tb+'.fits')
+        if baux1:
+            wtb, ftb = pyasl.read1dFitsSpec(tb+'.fits')
             wmins.append(wtb[0])
             wmaxs.append(wtb[-1])  
-            with fits.open(tb + '.fits', mode='readonly') as tbdul:
-                de2 = tbdul[0].header['CDELT1']
-                deltamin.append(de2)
-    
-    for k, img in enumerate(larch):
+            tbdul = fits.open(tb+'.fits', mode='readonly')
+            de2 = tbdul[0].header['CDELT1']
+            tbdul.close(output_verify='ignore')
+            deltamin.append(de2)
+    for k,img in enumerate(larch):
         print('::::::::::::::::::::::::::::::::::::::::::::::::::::::::')
-        print('Set RVs for ' + img + '\n')
-        wimg, fimg = pyasl.read1dFitsSpec(img)
-        
-        # CORREGIDO: usar with
-        with fits.open(img, mode='update') as hdul:
-            if k == 0:
-                de3 = hdul[0].header['CDELT1']
-                deltamin.append(de3)
-                wmins.append(wimg[0])
-                wmaxs.append(wimg[-1])      
-                winf = max(wmins)
-                wsup = min(wmaxs)
-                delta = np.max(deltamin)
-                new_disp_grid, fmask = setregion(wreg, delta, winf, wsup)
-            
-            aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
-            aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
-            fnew = aux2_img.flux.value
-            
-            if ta is not None and wta is not None:
-                print('Cross-correlation for primary component\n')
-                best_vra, aerr, asave = fxcor(new_disp_grid, fnew, wta, fta, fmask, fitcont=fitcont, interac=interac)
-                if asave:
-                    hdul[0].header['VRA'] = round(best_vra, 6)
-            
-            if tb is not None and wtb is not None:
-                print('\nCross-correlation for secondary component\n')
-                best_vrb, berr, bsave = fxcor(new_disp_grid, fnew, wtb, ftb, fmask, fitcont=fitcont, interac=interac)
-                if bsave:
-                    hdul[0].header['VRB'] = round(best_vrb, 6)
-
+        print('Set RVs for '+img+'\n')
+        wimg,fimg = pyasl.read1dFitsSpec(img)
+        hdul = fits.open(img, 'update')
+        if k==0:
+            de3 = hdul[0].header['CDELT1']
+            deltamin.append(de3)
+            wmins.append(wimg[0])
+            wmaxs.append(wimg[-1])      
+            winf=max(wmins)
+            wsup=min(wmaxs)
+            delta=np.max([deltamin])
+            new_disp_grid,fmask = setregion(wreg,delta,winf,wsup)
+        aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
+        aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
+        fnew=aux2_img.flux.value
+        if ta !=None:
+            print('Cross-correlation for primary component\n')
+            best_vra,aerr,asave=fxcor(new_disp_grid,fnew,wta,fta,fmask,fitcont=fitcont,interac=interac)
+            if asave:
+                hdul[0].header['VRA'] = round(best_vra,6)
+                #print(img+', VRA: '+str(round(best_vra,3))+' km/s')
+        if tb !=None:
+            print('\nCross-correlation for secondary component\n')
+            best_vrb,berr,bsave=fxcor(new_disp_grid,fnew,wtb,ftb,fmask,fitcont=fitcont,interac=interac)
+            if bsave:
+                hdul[0].header['VRB'] = round(best_vrb,6)
+                #print(img+', VRB: '+str(round(best_vrb,3))+' km/s\n\n')
+        hdul.flush(output_verify='ignore')
+        hdul.close(output_verify='ignore')
 ################################################################
 ################################################################
 ################################################################
-def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True, q=None, vgamma=None, obspha=False, showtit=True):
+def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, reject=True,q=None,vgamma=None,obspha=False,showtit=True):
     if showtit:
         print('')
         print('\t  Running SPBINA')
         print('')
-    
-    # Crear spline3 localmente
-    from specutils.manipulation import SplineInterpolatedResampler
     spline3 = SplineInterpolatedResampler()
-    
     VerifyWarning('ignore')
-    larch = makelist(lis)
-    nimg = len(larch)
-    
-    # CORREGIDO: usar with
-    with fits.open(larch[0], mode='readonly') as haux:
-        delta = haux[0].header['CDELT1']
-    
-    xwmin = []
-    xwmax = []
+    larch=makelist(lis)
+    nimg=len(larch)
+    haux = fits.open(larch[0], mode='readonly')
+    delta = haux[0].header['CDELT1']
+    xwmin=[]
+    xwmax=[]
     for i in range(nimg):
-        wbusq, dumm2 = pyasl.read1dFitsSpec(larch[i])
+        wbusq,dumm2 = pyasl.read1dFitsSpec(larch[i])
         xwmin.append(wbusq[0])
         xwmax.append(wbusq[-1])
-    new_disp_grid = np.arange(np.max(xwmin), np.min(xwmax), delta)
+    new_disp_grid=np.arange(np.max(xwmin),np.min(xwmax),delta)
     nwvl = len(new_disp_grid)
-    baux1 = os.path.isfile(spb + '.fits')
-    
-    # STEP 1: create B.fits
-    if not baux1:
+    baux1 = os.path.isfile(spb+'.fits')
+#STEP 1: create B.fits
+    if baux1==False:
         fa = 1.0/(1.0 + frat)
-        fb = frat * fa
-        tmp_matrix = np.zeros(shape=(nimg, nwvl))
-        cont = 0
+        fb = frat*fa
+        tmp_matrix = np.zeros(shape=(nimg,nwvl))
+        cont=0
         for img in larch:
-            wimg, fimg = pyasl.read1dFitsSpec(img)
+            wimg,fimg = pyasl.read1dFitsSpec(img)
             aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
             aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
             tmp = aux2_img.flux.value
             tmp_matrix[cont] = splineclean(tmp)
-            cont += 1
+            cont+=1
         f_mean = np.zeros(nwvl)
         for i in range(nwvl):
-            f_mean[i] = np.mean(tmp_matrix[:, i])
-        f_cont = continuum(new_disp_grid, f_mean, order=10, nit=10, type='fit', graph=False)
-        f_cont = splineclean(f_cont)
-        B = f_cont * fb
+            f_mean[i] = np.mean(tmp_matrix[:,i])
+        f_cont = continuum(new_disp_grid, f_mean, order=10, nit=10,type='fit',graph=False)
+        f_cont=splineclean(f_cont)
+        B = f_cont* fb
     else:
-        waux, faux = pyasl.read1dFitsSpec(spb + '.fits')
+        waux, faux = pyasl.read1dFitsSpec(spb+'.fits')
         aux_B = Spectrum(flux=faux*u.Jy, spectral_axis=waux*0.1*u.nm)
         aux2_B = spline3(aux_B, new_disp_grid*0.1*u.nm)
         tmp2 = aux2_B.flux.value
         B = splineclean(tmp2)
-    
-    # STEP 2: obs - B.fits
-    obs_matrix = np.zeros(shape=(nimg, nwvl))
-    dsA_matrix = np.zeros(shape=(nimg, nwvl))
-    dsB_matrix = np.zeros(shape=(nimg, nwvl))
-    za_matrix = np.zeros(shape=(nimg, nwvl))
-    zb_matrix = np.zeros(shape=(nimg, nwvl))
-    cont = 0
+#STEP 2: obs - B.fits
+    obs_matrix = np.zeros(shape=(nimg,nwvl))
+    dsA_matrix = np.zeros(shape=(nimg,nwvl))
+    dsB_matrix = np.zeros(shape=(nimg,nwvl))
+    za_matrix = np.zeros(shape=(nimg,nwvl))
+    zb_matrix = np.zeros(shape=(nimg,nwvl))
+    cont=0
     vra_array = np.zeros(nimg)
     vrb_array = np.zeros(nimg)
-    
     for img in larch:
-        # CORREGIDO: usar with
-        with fits.open(img, mode='readonly') as hdul:
-            vra = hdul[0].header['VRA']
-            if q is None:
-                vrb = hdul[0].header['VRB']
-            elif q > 0:
-                if vgamma is None:
-                    vgamma = 0
-                vrb = vgamma - (vra - vgamma)/q
-        
-        vra_array[cont] = vra
-        vrb_array[cont] = vrb
-        wimg, fimg = pyasl.read1dFitsSpec(img)
-        
-        # doppler correction for B.fits - verificar orden monótono
-        wlprime_B = new_disp_grid * np.sqrt((1. + vrb/299792.458)/(1. - vrb/299792.458))
-        if not np.all(np.diff(wlprime_B) > 0):
-            idx = np.argsort(wlprime_B)
-            wlprime_B = wlprime_B[idx]
-        
-        aux_sb = Spectrum(flux=B*u.Jy, spectral_axis=wlprime_B * 0.1*u.nm)
+        hdul = fits.open(img, mode='readonly')
+        vra = hdul[0].header['VRA']
+        hdul.close(output_verify='ignore')
+        if q==None:
+            vrb = hdul[0].header['VRB']
+        elif q>0:
+            if vgamma==None:
+                vgamma=0
+            vrb = vgamma - (vra-vgamma)/q
+        vra_array[cont]=vra
+        vrb_array[cont]=vrb
+        wimg,fimg = pyasl.read1dFitsSpec(img)
+        #doppler correction for B.fits
+        wlprime_B = new_disp_grid * np.sqrt((1.+vrb/299792.458)/(1.-vrb/299792.458))
+        aux_sb = Spectrum(flux=B*u.Jy, spectral_axis=wlprime_B *0.1*u.nm)
         aux2_sb = spline3(aux_sb, new_disp_grid*0.1*u.nm)
         fb_dop = aux2_sb.flux.value
-        
+        #Replace np.nan values for the nearest element
         aux_img = Spectrum(flux=fimg*u.Jy, spectral_axis=wimg*0.1*u.nm)
         aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
         dsB = aux2_img.flux.value - fb_dop
         dsB_matrix[cont] = splineclean(dsB)
         obs_matrix[cont] = splineclean(aux2_img.flux.value)
-        cont += 1
-        wei = np.mean(obs_matrix, axis=1)/np.max(np.mean(obs_matrix, axis=1))
-    
-    # STEP 3: calculate A.fits
+        cont+=1
+        wei=np.mean(obs_matrix,axis=1)/np.max(np.mean(obs_matrix,axis=1))
+#STEP 3: calculate A.fits
     for i in range(nit):
-        if showtit and i == 0:
+        if showtit==True and i==0:
             bar3 = ChargingBar('Calculating spectra:', max=nit)
         for j in range(nimg):
-            wlprime_A = new_disp_grid * np.sqrt((1. - vra_array[j]/299792.458)/(1. + vra_array[j]/299792.458))
-            if not np.all(np.diff(wlprime_A) > 0):
-                idx = np.argsort(wlprime_A)
-                wlprime_A = wlprime_A[idx]
-            
-            aux_sa = Spectrum(flux=dsB_matrix[j] * u.Jy, spectral_axis=wlprime_A * 0.1*u.nm)
+            wlprime_A = new_disp_grid * np.sqrt((1.-vra_array[j]/299792.458)/(1.+vra_array[j]/299792.458))
+            aux_sa = Spectrum(flux=dsB_matrix[j] *u.Jy, spectral_axis=wlprime_A *0.1*u.nm)
             aux2_sa = spline3(aux_sa, new_disp_grid*0.1*u.nm)
             fa_dop = aux2_sa.flux.value
+            #Replace np.nan values for the nearest element
             za_matrix[j] = splineclean(fa_dop)
-        
         if reject:
-            A = sfcomb(za_matrix, wei)
+            A = sfcomb(za_matrix,wei)
         else:
-            A = np.average(za_matrix, axis=0, weights=wei)
-        
-        # STEP 4: obs - A.fits
-        # STEP 5: calculate B.fits
+            A = np.average(za_matrix,axis=0,weights=wei)
+#STEP 4: obs - A.fits
+#STEP 5: calculate B.fits
         for j in range(nimg):
-            wlprime_A = new_disp_grid * np.sqrt((1. + vra_array[j]/299792.458)/(1. - vra_array[j]/299792.458))
-            if not np.all(np.diff(wlprime_A) > 0):
-                idx = np.argsort(wlprime_A)
-                wlprime_A = wlprime_A[idx]
-            
-            aux_sa = Spectrum(flux=A*u.Jy, spectral_axis=wlprime_A * 0.1*u.nm)
+            wlprime_A = new_disp_grid * np.sqrt((1.+vra_array[j]/299792.458)/(1.-vra_array[j]/299792.458))
+            aux_sa = Spectrum(flux=A*u.Jy, spectral_axis=wlprime_A *0.1*u.nm)
             aux2_sa = spline3(aux_sa, new_disp_grid*0.1*u.nm)
             fa_dop = aux2_sa.flux.value
-            fa_dop = splineclean(fa_dop)
+            fa_dop =  splineclean(fa_dop)
             dsA_matrix[j] = obs_matrix[j] - fa_dop
-            
-            wlprime_B = new_disp_grid * np.sqrt((1. - vrb_array[j]/299792.458)/(1. + vrb_array[j]/299792.458))
-            if not np.all(np.diff(wlprime_B) > 0):
-                idx = np.argsort(wlprime_B)
-                wlprime_B = wlprime_B[idx]
-            
+            wlprime_B = new_disp_grid * np.sqrt((1.-vrb_array[j]/299792.458)/(1.+vrb_array[j]/299792.458))
             aux_sb = Spectrum(flux=dsA_matrix[j]*u.Jy, spectral_axis=wlprime_B*0.1*u.nm)
             aux2_sb = spline3(aux_sb, new_disp_grid*0.1*u.nm)
             fb_dop = aux2_sb.flux.value
             zb_matrix[j] = splineclean(fb_dop)
-        
         if reject:
-            B = sfcomb(zb_matrix, wei)
+            B = sfcomb(zb_matrix,wei)
         else:
-            B = np.average(zb_matrix, axis=0, weights=wei)
-        
-        # STEP 6: obs - B.fits
+            B = np.average(zb_matrix,axis=0,weights=wei)
+#STEP 6: obs - B.fits
         for j in range(nimg):
-            wlprime_B = new_disp_grid * np.sqrt((1. + vrb_array[j]/299792.458)/(1. - vrb_array[j]/299792.458))
-            if not np.all(np.diff(wlprime_B) > 0):
-                idx = np.argsort(wlprime_B)
-                wlprime_B = wlprime_B[idx]
-            
-            aux_sb = Spectrum(flux=B*u.Jy, spectral_axis=wlprime_B * 0.1*u.nm)
+            wlprime_B = new_disp_grid * np.sqrt((1.+vrb_array[j]/299792.458)/(1.-vrb_array[j]/299792.458))
+            aux_sb = Spectrum(flux=B*u.Jy, spectral_axis=wlprime_B *0.1*u.nm)
             aux2_sb = spline3(aux_sb, new_disp_grid*0.1*u.nm)
             fb_dop = aux2_sb.flux.value
             dsB_matrix[j] = obs_matrix[j] - splineclean(fb_dop)
-        
         if showtit:
             bar3.next()
-    
     if showtit:
         bar3.finish()
-    
-    pyasl.write1dFitsSpec(spa + '.fits', A, wvl=new_disp_grid, clobber=True)
-    pyasl.write1dFitsSpec(spb + '.fits', B, wvl=new_disp_grid, clobber=True)
-    
+    pyasl.write1dFitsSpec(spa+'.fits', A, wvl=new_disp_grid, clobber=True)
+    pyasl.write1dFitsSpec(spb+'.fits', B, wvl=new_disp_grid, clobber=True)
     if obspha:
-        for i, img in enumerate(larch):
-            pyasl.write1dFitsSpec('ds-B_' + img, dsB_matrix[i], wvl=new_disp_grid, clobber=True)
-            copyheader(img, 'ds-B_' + img)
-            pyasl.write1dFitsSpec('ds-A_' + img, dsA_matrix[i], wvl=new_disp_grid, clobber=True)
-            copyheader(img, 'ds-A_' + img)
-
+        for i,img in enumerate(larch):
+            pyasl.write1dFitsSpec('ds-B_'+img, dsB_matrix[i], wvl=new_disp_grid, clobber=True)
+            copyheader(img,'ds-B_'+img)
+            pyasl.write1dFitsSpec('ds-A_'+img, dsA_matrix[i], wvl=new_disp_grid, clobber=True)
+            copyheader(img,'ds-A_'+img)
 ################################################################
 ################################################################
 ################################################################
-def splot(file, xmin=None, xmax=None, ymin=None, ymax=None, scale=1., markpix=False, newfig=True, color='r'):
+def splot(file,xmin=None,xmax=None,ymin=None,ymax=None, scale= 1., markpix=False, newfig=True, color='r'):
     plt.ion()
-    w, f = pyasl.read1dFitsSpec(file)
+    w,f = pyasl.read1dFitsSpec(file)
     if newfig:
-        plt.figure(figsize=[20, 10])
-    if xmin is None:
-        x1 = np.min(w)
+        plt.figure(figsize=[20,10])
+    if xmin==None:
+        x1=np.min(w)
     else:
-        x1 = xmin
-    if xmax is None:
-        x2 = np.max(w)
+        x1=xmin
+    if xmax==None:
+        x2=np.max(w)
     else:
-        x2 = xmax
-    if ymin is None:
-        y1 = np.min(f) * scale
+        x2=xmax
+    if ymin==None:
+        y1=np.min(f)*scale
     else:
-        y1 = ymin
-    if ymax is None:
-        y2 = np.max(f) * scale
+        y1=ymin
+    if ymax==None:
+        y2=np.max(f)*scale
     else:
-        y2 = ymax * scale
-    plt.axis([x1, x2, y1, y2])  
+        y2=ymax*scale
+    plt.axis([x1,x2,y1,y2])  
     plt.ylabel('Flux')
     plt.xlabel('Wavelength')
     plt.title(file)
-    plt.plot(w, f*scale, marker='', color=color, linewidth=1)
+    plt.plot(w,f*scale,marker='',color=color,linewidth=1)
     if markpix:
-        plt.plot(w, f*scale, marker='.', markersize=2, color='black', linestyle='')
+        plt.plot(w,f*scale,marker='.',markersize=2,color='black',linestyle='')
     plt.tight_layout()
-    return w, f
-
+    return w,f
 ################################################################
 ################################################################
 ################################################################
-def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.01, 
-          wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900', nproc=6):
-    # Crear spline3 localmente
-    from specutils.manipulation import SplineInterpolatedResampler
-    spline3 = SplineInterpolatedResampler()
-    
-    istr = '00'
-    if not os.path.isdir('output_00'):
+def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.01, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900',nproc=6):
+    istr='00'
+    if os.path.isdir('output_00')==False:
         os.mkdir('output_00')
     else:
-        it = 1
-        while os.path.isdir('output_' + istr):
-            if it < 10:
-                istr = '0' + str(it)
+        it=1
+        while os.path.isdir('output_'+istr):
+            if it <10:
+                istr='0'+str(it)
             else:
-                istr = str(it)
-            it += 1
-        os.mkdir('output_' + istr)
-    outfolder = 'output_' + istr
-    print('Output folder: ' + outfolder)
-    svrange = np.arange(svmin, svmax + step, step) 
+                istr=str(it)
+            it+=1
+        os.mkdir('output_'+istr)
+    outfolder='output_'+istr
+    print('Output folder: '+outfolder)
+    svrange=np.arange(svmin,svmax+step,step) 
     if math.modf(step)[0] == 0:
-        nrd = 0
+        nrd=0
     else:
-        nrd = len(str(step)) - str(step).find('.') - 1
+        nrd=len(str(step))-str(step).find('.')-1
     plt.ion()
     print('\n\t  Running VGRID\n')
     VerifyWarning('ignore')
-    larch = makelist(lis)
+    larch=makelist(lis)
     if lit[len(lit)-1] == '/':
-        lit = lit[0:len(lit)-1]
-    ltemp = sorted(listmp(lit))
-    q_array = np.arange(round(qmin, 7), round(qmax + deltaq, 7), round(deltaq, 7))
-    
-    # Create fading mask
-    dlist = []
-    # CORREGIDO
-    with fits.open(larch[0], mode='readonly') as hobs:
-        d1 = hobs[0].header['CDELT1']
-        dlist.append(d1)
-        try:
-            obj1 = hobs[0].header['OBJECT']
-            obj1 = obj1.replace(' ', '')
-        except KeyError:
-            obj1 = 'NoObject'
-    
-    # CORREGIDO
-    with fits.open(ltemp[0], mode='readonly') as htmp:
-        d2 = htmp[0].header['CDELT1']
-        dlist.append(d2)
-    
-    waux1, faux1 = pyasl.read1dFitsSpec(larch[0])
-    waux2, faux2 = pyasl.read1dFitsSpec(ltemp[0])
-    gap = 50
-    winf = max(waux1[0], waux2[0]) + gap
-    wsup = min(waux1[-1], waux2[-1]) - gap
-    new_disp_grid, fmask = setregion(wreg, np.max(dlist), winf, wsup)
-    
-    # Load templates and create array for temperatures
-    vector_t = np.zeros(len(ltemp))
-    tt_array = np.zeros(len(ltemp))
-    matrix_tmp = np.zeros(shape=(len(ltemp), len(new_disp_grid)))
+        lit=lit[0:len(lit)-1]
+    ltemp=sorted(listmp(lit))
+    q_array=np.arange(round(qmin,7),round(qmax+deltaq,7),round(deltaq,7))
+    #Create fading mask
+    dlist=[]
+    hobs = fits.open(larch[0], mode='readonly')
+    d1 = hobs[0].header['CDELT1']
+    dlist.append(d1)
+    try:
+        obj1 = hobs[0].header['OBJECT']
+        obj1=obj1.replace(' ','')
+    except KeyError:
+        obj1='NoObject'
+    hobs.close(output_verify='ignore')
+    htmp = fits.open(ltemp[0], mode='readonly')
+    d2 = htmp[0].header['CDELT1']
+    dlist.append(d2)
+    htmp.close(output_verify='ignore')
+    waux1,faux1 = pyasl.read1dFitsSpec(larch[0])
+    waux2,faux2 = pyasl.read1dFitsSpec(ltemp[0])
+    gap=50
+    winf=max(waux1[0],waux2[0])+gap
+    wsup=min(waux1[-1],waux2[-1])-gap
+    new_disp_grid,fmask = setregion(wreg,np.max(dlist),winf,wsup)
+    #Load templates and create array for temperatures
+    vector_t=np.zeros(len(ltemp))
+    tt_array=np.zeros(len(ltemp))
+    matrix_tmp=np.zeros(shape=(len(ltemp),len(new_disp_grid)))
     bar2 = ChargingBar('Loading templates:', max=len(ltemp))
-    for k, tmp in enumerate(ltemp):
-        # CORREGIDO
-        with fits.open(tmp, mode='readonly') as htmp:
-            teff = htmp[0].header['TEFF']
-            vector_t[k] = teff
-        
-        wt1, ft1 = pyasl.read1dFitsSpec(tmp)
-        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2, hi=4, graph=False)
+    for k,tmp in enumerate(ltemp):
+        htmp = fits.open(tmp, mode='readonly')
+        teff= htmp[0].header['TEFF']
+        vector_t[k]=teff
+        htmp.close(output_verify='ignore')
+        wt1,ft1 = pyasl.read1dFitsSpec(tmp)
+        temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2,hi=4, graph=False)
         aux_tmp1 = Spectrum(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
-        template1 = splineclean(aux2_tmp1.flux.value * fmask)
-        matrix_tmp[k] = template1
-        tt_array[k] = np.mean(template1**2)
+        template1=splineclean(aux2_tmp1.flux.value*fmask)
+        matrix_tmp[k]=template1
+        tt_array[k]=np.mean(template1**2)
         bar2.next()
     bar2.finish()
     print('')
-    
-    # Execute FIND2C analysis for vgamma grid
+    #Execute FIND2C analysis for vgamma grid
     bar0 = ChargingBar('Calculating syst. RV:', max=len(svrange))
     for vgamma in svrange:
-        matrix_cc = np.zeros(shape=(len(ltemp), len(q_array)))
-        vgindex = str(round(vgamma, nrd))
+        matrix_cc=np.zeros(shape=(len(ltemp),len(q_array)))
+        vgindex=str(round(vgamma,nrd))
         for xq in q_array:
-            aux1 = str(round(xq, len(str(deltaq+1))-2)).replace('.', '')
-            if os.path.isfile('B' + aux1 + '.fits'):
-                os.remove('B' + aux1 + '.fits')
-            if os.path.isfile('A' + aux1 + '.fits'):
-                os.remove('A' + aux1 + '.fits')
-        
-        
-        qa2 = np.array_split(q_array, nproc)
+            aux1=str(round(xq,len(str(deltaq+1))-2)).replace('.','')
+            aux2 = os.path.isfile('B'+aux1+'.fits')
+            if aux2:
+                os.remove('B'+aux1+'.fits')
+            aux3 = os.path.isfile('A'+aux1+'.fits')
+            if aux3:
+                os.remove('A'+aux1+'.fits') 
+        qa2=np.array_split(q_array,nproc)
         with Pool(processes=nproc) as pool:
             pres=[pool.apply_async(qparallel, args= [chk,lis,larch,'A','B',deltaq,vgamma]) for chk in qa2]
             pres2 = [chk.get() for chk in pres]
-        
-        matrix_sq = np.zeros(shape=(len(q_array), len(new_disp_grid)))
-        # Load calculated B_q spectra
-        for j, xq in enumerate(q_array):
-            aux1 = str(round(xq, len(str(deltaq+1))-2)).replace('.', '')
-            wimg, fimg = pyasl.read1dFitsSpec('B' + aux1 + '.fits')
-            spec_cont = continuum(wimg, fimg, type='diff', lo=2.5, hi=3.5, graph=False)
+        matrix_sq=np.zeros(shape=(len(q_array),len(new_disp_grid)))
+        #Load calculated B_q spectra
+        for j,xq in enumerate(q_array):
+            aux1=str(round(xq,len(str(deltaq+1))-2)).replace('.','')
+            wimg,fimg = pyasl.read1dFitsSpec('B'+aux1+'.fits')
+            spec_cont=continuum(wimg, fimg, type='diff',lo=2.5,hi=3.5, graph=False)
             aux_img = Spectrum(flux=spec_cont*u.Jy, spectral_axis=wimg*0.1*u.nm)
             aux2_img = spline3(aux_img, new_disp_grid*0.1*u.nm)
-            matrix_sq[j] = splineclean(aux2_img.flux.value) * fmask
-        
-        # Load calculated tt values from templates
-        norma_b = np.max(np.mean(matrix_sq**2, axis=1))
-        for k, tt in enumerate(tt_array):
-            for l, xq in enumerate(q_array):
-                tb = np.mean(matrix_tmp[k] * matrix_sq[l])
-                cc = tb/(np.sqrt(norma_b) * np.sqrt(tt))
-                matrix_cc[k, l] = cc
+            matrix_sq[j] = splineclean(aux2_img.flux.value)*fmask
+        #Load calculated tt values from templates
+        norma_b=np.max(np.mean(matrix_sq**2,axis=1))
+        for k,tt in enumerate(tt_array):
+            for l,xq in enumerate(q_array):
+                tb=np.mean(matrix_tmp[k]*matrix_sq[l])
+                cc=tb/(np.sqrt(norma_b)*np.sqrt(tt))
+                matrix_cc[k,l]=cc
         bar0.next()
-        
-        # save matrix_cc in FITS file
-        fits.writeto(outfolder + '/' + obj1 + '_vg_' + vgindex + '.fits', matrix_cc, overwrite=True)
-        
-        # CORREGIDO
-        with fits.open(outfolder + '/' + obj1 + '_vg_' + vgindex + '.fits', mode='update') as hcc:
-            hcc[0].header['Q0'] = qmin
-            hcc[0].header['Q1'] = qmax
-            hcc[0].header['DELTA_Q'] = deltaq
-            hcc[0].header['T0'] = vector_t[0]
-            hcc[0].header['T1'] = vector_t[-1]
-            hcc[0].header['DELTA_T'] = vector_t[1] - vector_t[0]
-            hcc[0].header['VGAMMA'] = float(vgindex)
-            hcc[0].header['WREG'] = '4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'
-        
-        # Clean A.fits and B.fits files
+        #save matrix_cc in FITS file
+        fits.writeto(outfolder+'/'+obj1+'_vg_'+vgindex+'.fits',matrix_cc,overwrite=True)
+        hcc = fits.open(outfolder+'/'+obj1+'_vg_'+vgindex+'.fits', mode='update')
+        hcc[0].header['Q0'] = qmin
+        hcc[0].header['Q1'] = qmax
+        hcc[0].header['DELTA_Q'] = deltaq
+        hcc[0].header['T0'] = vector_t[0]
+        hcc[0].header['T1'] = vector_t[-1]
+        hcc[0].header['DELTA_T'] = vector_t[1]-vector_t[0]
+        hcc[0].header['VGAMMA'] = float(vgindex)
+        hcc[0].header['WREG'] = '4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'
+        hcc.close(output_verify='ignore') 
+        #Clean A.fits and B.fits files
         for xq in q_array:
-            aux1 = str(round(xq, len(str(deltaq+1))-2)).replace('.', '')
-            if os.path.isfile('B' + aux1 + '.fits'):
-                os.remove('B' + aux1 + '.fits')
-            if os.path.isfile('A' + aux1 + '.fits'):
-                os.remove('A' + aux1 + '.fits')
+            aux1=str(round(xq,len(str(deltaq+1))-2)).replace('.','')
+            aux2 = os.path.isfile('B'+aux1+'.fits')
+            if aux2:
+                os.remove('B'+aux1+'.fits')
+            aux3 = os.path.isfile('A'+aux1+'.fits')
+            if aux3:
+                os.remove('A'+aux1+'.fits')
     vexplore(outfolder)
     bar0.finish()
-
 ################################################################
 ################################################################
 ################################################################   
-def uniform(lis, interac=True):
-    # Crear spline3 localmente
-    from specutils.manipulation import SplineInterpolatedResampler
-    spline3 = SplineInterpolatedResampler()
-    
-    # Apply doppler correction for RV=0
+def uniform(lis,interac=True):
+    #Apply doppler correction for RV=0
     global yours
     plt.close()
     plt.ioff()
     VerifyWarning('ignore')
-    larch = makelist(lis)
-    
-    # Calculate mean spectrum
-    with fits.open(larch[0], mode='readonly') as hobs:
-        dx = hobs[0].header['CDELT1']
-    
-    xwmin = []
-    xwmax = []
-    for i, imin in enumerate(larch):
-        wbusq, dumm2 = pyasl.read1dFitsSpec(imin)
+    larch=makelist(lis)
+    #Calculate mean spectrum
+    hobs = fits.open(larch[0], mode='readonly')
+    dx= hobs[0].header['CDELT1']
+    xwmin=[]
+    xwmax=[]
+    for i,imin in enumerate(larch):
+        wbusq,dumm2 = pyasl.read1dFitsSpec(imin)
         xwmin.append(wbusq[0])
         xwmax.append(wbusq[-1])
-    new_disp_grid = np.arange(np.max(xwmin), np.min(xwmax), dx)
+    new_disp_grid=np.arange(np.max(xwmin),np.min(xwmax),dx)
     nwvl = len(new_disp_grid)
-    obs_matrix = np.zeros(shape=(len(larch), nwvl))
-    ldel = []
+    obs_matrix = np.zeros(shape=(len(larch),nwvl))
+    ldel=[]
     print('\n\tProcessing spectra list...\n')
-    larch2 = larch.copy()
-    
-    for k, img in enumerate(larch):
-        wimg, fimg = pyasl.read1dFitsSpec(img)
-        rp = np.where(fimg == 0)
-        fimg[rp] = np.mean(fimg)
-        # CORREGIDO
-        with fits.open(img, mode='readonly') as hdul:
-            vra = hdul[0].header['VRA']
-        
-        w2 = wimg * np.sqrt((1. - vra/299792.458)/(1. + vra/299792.458))
-        aux_img = Spectrum(flux=fimg * u.Jy, spectral_axis=w2 * 0.1*u.nm)
-        aux_img2 = spline3(aux_img, new_disp_grid*0.1*u.nm)
-        
+    larch2=larch.copy()
+    for k,img in enumerate(larch):
+        wimg,fimg = pyasl.read1dFitsSpec(img)
+        rp=np.where(fimg ==0)
+        fimg[rp]=np.mean(fimg)
+        hdul = fits.open(img, mode='readonly')
+        vra = hdul[0].header['VRA']
+        hdul.close(output_verify='ignore')
+        w2 = wimg * np.sqrt((1.-vra/299792.458)/(1.+vra/299792.458))
+        aux_img = Spectrum(flux=fimg *u.Jy, spectral_axis=w2 *0.1*u.nm)
+        aux_img2 = spline3(aux_img,new_disp_grid*0.1*u.nm)
         if interac:
-            fig = plt.figure(figsize=[15, 8])
-            plt.title('Spectrum ' + img)
-            plt.xlabel('Wavelength [A]')
+            fig = plt.figure(figsize=[15,8])
+            plt.title('Spectrum '+img)
+            plt.xlabel('Wavelenght [A]')
             plt.ylabel('Flux')
-            plt.plot(wimg, fimg, color='red', ls='-')  
-            plt.plot(new_disp_grid, aux_img2.flux.value, ls='--', marker='', color='blue')
-            plt.legend(('Original', 'RV corrected'))
+            plt.plot(wimg,fimg, color='red',ls='-')  
+            plt.plot(new_disp_grid,aux_img2.flux.value,ls='--',marker='',color='blue')
+            plt.legend(('Original','RV corrected'))
             plt.tight_layout()
             fig.canvas.mpl_connect('key_press_event', on_key)
             print('\t............................................')
@@ -1108,95 +968,86 @@ def uniform(lis, interac=True):
             print('\t············································')
             plt.show()
             if yours == 'y' or yours == 'Y':
-                obs_matrix[k] = splineclean(aux_img2.flux.value)
+                obs_matrix[k]=splineclean(aux_img2.flux.value)
             else:
                 ldel.append(k)
                 larch2.remove(img)
         else:
-            obs_matrix[k] = splineclean(aux_img2.flux.value)
-    
-    # delete spectra unselected
-    obs_matrix = np.delete(obs_matrix, ldel, axis=0)
-    wei = np.mean(obs_matrix, axis=1)/np.max(np.mean(obs_matrix, axis=1))
-    smean1 = sfcomb(obs_matrix, wei)
-    
+            obs_matrix[k]=splineclean(aux_img2.flux.value)
+    #delete spectra unselected
+    obs_matrix = np.delete(obs_matrix,ldel,axis=0)
+    wei=np.mean(obs_matrix,axis=1)/np.max(np.mean(obs_matrix,axis=1))
+    smean1 = sfcomb(obs_matrix,wei)
     if interac:      
-        fig = plt.figure(figsize=[15, 8])
-        plt.plot(new_disp_grid, smean1, c='black', ls='--')
+        fig = plt.figure(figsize=[15,8])
+        plt.plot(new_disp_grid,smean1,c='black',ls='--')
         plt.show()
-    
-    wtr1 = np.abs(new_disp_grid - (new_disp_grid[0] + 50)).argmin(0)
-    wtr2 = np.abs(new_disp_grid - (new_disp_grid[-1] - 50)).argmin(0)
-    grid2 = new_disp_grid[wtr1:wtr2]
-    
-    for i, img in enumerate(larch2):
-        wv, fl = pyasl.read1dFitsSpec(img)
-        rp = np.where(fl == 0)
-        fl[rp] = np.mean(fl)
-        aux_spec = Spectrum(flux=fl * u.Jy, spectral_axis=wv * 0.1*u.nm)
+    wtr1 = np.abs(new_disp_grid - (new_disp_grid[0]+50)).argmin(0)
+    wtr2 = np.abs(new_disp_grid - (new_disp_grid[-1]-50)).argmin(0)
+    grid2=new_disp_grid[wtr1:wtr2]
+    for i,img in enumerate(larch2):
+        wv,fl = pyasl.read1dFitsSpec(img)
+        rp=np.where(fl ==0)
+        fl[rp]=np.mean(fl)
+        aux_spec = Spectrum(flux=fl *u.Jy, spectral_axis=wv *0.1*u.nm)
         spec = spline3(aux_spec, grid2*0.1*u.nm)
-        fs = splineclean(spec.flux.value)
-        
-        with fits.open(img, mode='readonly') as hdul:
-            vra = hdul[0].header['VRA']
-        
-        grid_aux = new_disp_grid * np.sqrt((1. + vra/299792.458)/(1. - vra/299792.458))
-        aux_smean = Spectrum(flux=smean1 * u.Jy, spectral_axis=grid_aux * 0.1*u.nm)
-        aux_smean2 = spline3(aux_smean, grid2*0.1*u.nm)
-        smean2 = splineclean(aux_smean2.flux.value)
-        s1 = fs/smean2
-        f_cont = continuum(grid2, s1, type='fit', graph=False)
+        fs=splineclean(spec.flux.value)
+        hdul = fits.open(img, mode='readonly')
+        vra = hdul[0].header['VRA']
+        hdul.close(output_verify='ignore')
+        grid_aux = new_disp_grid * np.sqrt((1.+vra/299792.458)/(1.-vra/299792.458))
+        aux_smean = Spectrum(flux=smean1 *u.Jy, spectral_axis=grid_aux *0.1*u.nm)
+        aux_smean2 = spline3(aux_smean,grid2*0.1*u.nm)
+        smean2=splineclean(aux_smean2.flux.value)
+        s1=fs/smean2
+        f_cont = continuum(grid2, s1 ,type='fit',graph=False)
         f_norm = fs / f_cont
-        naux = img.replace('.fits', '')
+        naux = img.replace('.fits','')
         print('')
-        print('\tSaving ' + img + '...')
-        pyasl.write1dFitsSpec(naux + '_U.fits', f_norm, grid2, clobber=True)
-        copyheader(img, naux + '_U.fits')
-
+        print('\tSaving '+img+'...')
+        pyasl.write1dFitsSpec(naux+'_U.fits', f_norm, grid2, clobber=True)
+        copyheader(img,naux+'_U.fits')        
 ################################################################
 ################################################################
 ################################################################
 def vexplore(folder):
     plt.ioff()
-    folder = folder.replace('/', '')
-    # list vgamma files into output
+    folder=folder.replace('/','')
+    #list vgamma files into output
     nfiles = os.listdir(folder)
     vgdicc = {}
     for xf in nfiles:
         if os.path.isfile(os.path.join(folder, xf)) and xf.endswith('.fits'):
-            # CORREGIDO
-            with fits.open(folder + '/' + xf, mode='readonly') as hdul:
-                xvg = hdul[0].header['VGAMMA']
-                vgdicc[xf] = xvg
-    
-    # sort list
-    vgd_sort = sorted(vgdicc.items(), key=operator.itemgetter(1), reverse=False)
-    n = len(vgd_sort)
-    
-    # read pixels values and q_array and Teff array
-    qall = []
-    tall = []
-    ccall = []
-    for i, img in enumerate(vgd_sort):
-        # CORREGIDO
-        with fits.open(folder + '/' + img[0], mode='readonly') as hdul:
-            # make array for q
-            qmin = hdul[0].header['Q0']
-            qmax = hdul[0].header['Q1']
-            deltaq = hdul[0].header['DELTA_Q']
-            q_array = np.arange(round(qmin, 7), round(qmax + deltaq, 7), round(deltaq, 7))
-            # make array for Teff
-            t0 = hdul[0].header['T0']  
-            t1 = hdul[0].header['T1']
-            deltat = hdul[0].header['DELTA_T']
-            vector_t = np.arange(t0, t1 + deltat, deltat)
-            # read pixels values
-            ccx = hdul[0].data
-            qall.append(q_array)
-            tall.append(vector_t)
-            ccall.append(ccx)
-    
-    fig = plt.figure(figsize=[6, 6])
+            hdul = fits.open(folder+'/'+xf, mode='readonly')
+            xvg=hdul[0].header['VGAMMA']
+            hdul.close(output_verify='ignore')
+            vgdicc[xf]=xvg
+    #sort list
+    vgd_sort=sorted(vgdicc.items(), key=operator.itemgetter(1), reverse=False)
+    n=len(vgd_sort)
+    #read pixels values and q_array and Teff array
+    qall=[]
+    tall=[]
+    ccall=[]
+    for i,img in enumerate(vgd_sort):
+        hdul = fits.open(folder+'/'+img[0], mode='readonly')
+        #make array for q
+        qmin=hdul[0].header['Q0']
+        qmax=hdul[0].header['Q1']
+        deltaq=hdul[0].header['DELTA_Q']
+        q_array=np.arange(round(qmin,7),round(qmax+deltaq,7),round(deltaq,7))
+        #make array for Teff
+        t0=hdul[0].header['T0']  
+        t1=hdul[0].header['T1']
+        deltat=hdul[0].header['DELTA_T']
+        vector_t=np.arange(t0,t1+deltat,deltat)
+        #read pixels values
+        ccx = hdul[0].data
+        hdul.close(output_verify='ignore')
+        qall.append(q_array)
+        tall.append(vector_t)
+        ccall.append(ccx)
+    fig=plt.figure(figsize=[6,6])
     ax = fig.add_subplot(111, projection='3d')
     ax.set_autoscalez_on(False)
     plt.rc('xtick', labelsize=9)
@@ -1204,35 +1055,33 @@ def vexplore(folder):
     ax.set_zlim3d(bottom=np.min(ccall), top=np.max(ccall))
     ax.set_xlabel("Mass ratio ($q$)", fontsize=9)
     ax.set_ylabel("Temp. [1000 K]", fontsize=9)
-    ax.set_title('Systemic RV = ' + str(vgd_sort[0][1]) + ' km/s', y=1)
+    ax.set_title('Systemic RV = '+str(vgd_sort[0][1])+' km/s',y=1)
     X, Y = np.meshgrid(qall[0], tall[0]/1000)
-    ax.plot_surface(X, Y, ccall[0], rstride=1, cstride=1, cmap='jet', vmin=np.min(ccall), vmax=np.max(ccall))
-    fig.subplots_adjust(top=1, bottom=0.05, left=0.05, right=0.92, hspace=0.2, wspace=0.02)
-    
+    ax.plot_surface(X, Y, ccall[0], rstride=1, cstride=1, cmap='jet',vmin=np.min(ccall), vmax=np.max(ccall))
+    fig.subplots_adjust(top=1,bottom=0.05,left=0.05,right=0.92,hspace=0.2,wspace=0.02)
     class Index:
         ind = 0
         def next(self, event):
             self.ind += 1
-            i = self.ind % n
+            i=self.ind  % n
             ax.cla()
             ax.set_zlim3d(bottom=np.min(ccall), top=np.max(ccall))
-            ax.plot_surface(X, Y, ccall[i], rstride=1, cstride=1, cmap='jet', vmin=np.min(ccall), vmax=np.max(ccall))
-            ax.set_title('Systemic RV = ' + str(vgd_sort[i][1]) + ' km/s', y=1)
+            ax.plot_surface(X, Y, ccall[i], rstride=1, cstride=1, cmap='jet',vmin=np.min(ccall), vmax=np.max(ccall))
+            ax.set_title('Systemic RV = '+str(vgd_sort[i][1])+' km/s',y=1)
             ax.set_xlabel("Mass ratio ($q$)", fontsize=9)
             ax.set_ylabel("Temp. [1000 K]", fontsize=9)
             plt.draw()
-        
+    
         def prev(self, event):
             self.ind -= 1 % n
-            i = self.ind % n
+            i=self.ind % n
             ax.cla()
             ax.set_zlim3d(bottom=np.min(ccall), top=np.max(ccall))
-            ax.plot_surface(X, Y, ccall[i], rstride=1, cstride=1, cmap='jet', vmin=np.min(ccall), vmax=np.max(ccall))
-            ax.set_title('Systemic RV = ' + str(vgd_sort[i][1]) + ' km/s', y=1)
+            ax.plot_surface(X, Y, ccall[i], rstride=1, cstride=1, cmap='jet',vmin=np.min(ccall), vmax=np.max(ccall))
+            ax.set_title('Systemic RV = '+str(vgd_sort[i][1])+' km/s',y=1)
             ax.set_xlabel("Mass ratio ($q$)", fontsize=9)
             ax.set_ylabel("Temperature [x1000 K]", fontsize=9)
             plt.draw()
-    
     callback = Index()
     axprev = plt.axes([0.05, 0.88, 0.1, 0.075])
     axnext = plt.axes([0.85, 0.88, 0.1, 0.075])
@@ -1241,192 +1090,176 @@ def vexplore(folder):
     bprev = Button(axprev, 'Previous')
     bprev.on_clicked(callback.prev)
     plt.show()
-
 ################################################################
 ################################################################
 ################################################################
 # INTERNAL FUNCTIONS
-# Parallel process
-def qparallel(q_array, lis, larch, spa, spb, deltaq, vgamma):
-    """Función para ejecutar en paralelo"""
-    # Importaciones necesarias DENTRO de la función paralela
-    import os
-    import numpy as np
-    from astropy.io import fits
-    from astropy import units as u
-    from specutils import Spectrum
-    from specutils.manipulation import SplineInterpolatedResampler
-    from PyAstronomy import pyasl
-    from astropy.io.fits.verify import VerifyWarning
-    
-    VerifyWarning('ignore')
-    
+#Parallel process
+def qparallel(q_array,lis,larch,spa,spb,deltaq,vgamma):
     for xq in q_array:
-        try:
-            aux1 = str(round(xq, len(str(deltaq+1))-2)).replace('.', '')
-            aux2 = os.path.isfile(spb + aux1 + '.fits')
-            if not aux2:
-                spbina(lis, spa=spa+aux1, spb=spb+aux1, nit=1, q=xq, vgamma=vgamma, showtit=False)
-        except Exception as e:
-            print(f"Error en q={xq}: {str(e)}")
-            raise
+        aux1=str(round(xq,len(str(deltaq+1))-2)).replace('.','')
+        aux2 = os.path.isfile(spb+aux1+'.fits')
+        if aux2==False:
+            spbina(lis, spa=spa+aux1, spb=spb+aux1, nit=1,q=xq,vgamma=vgamma,showtit=False)
+            #print(spb+aux1+' done!')
 
 def makelist(lis):
-    aux1 = lis.find('@')
+    aux1=lis.find('@')
     if aux1 == -1:
-        path = os.getcwd()
-        aux2 = glob.glob(path + '/' + lis)
-        newlist = []
+        path=os.getcwd()
+        aux2=glob.glob(path+'/'+lis)
+        newlist=[]
         for i in range(len(aux2)):
-            newlist.append(aux2[i].replace(path + '/', ''))
+            newlist.append(aux2[i].replace(path+'/',''))
     else:
-        aux2 = lis.replace('@', '')
-        with open(aux2, 'r') as f:
-            aux3 = f.readlines()
-        newlist = []
+        aux2=lis.replace('@','')
+        f=open(aux2,'r')
+        aux3=f.readlines()
+        f.close()
+        newlist=[]
         for i in range(len(aux3)):
             newlist.append(aux3[i].rstrip('\n'))
-    return newlist
+    return(newlist)
 
 @jit(nopython=True)
-def sfcomb(aflux, wei, nit=5, sigma=3):
-    nwvl = aflux.shape[1]
+def sfcomb(aflux,wei,nit=5,sigma=3):
+    nwvl=aflux.shape[1]
     s_mean = []
     for w in range(nwvl):
-        fdata = aflux[:, w] / wei
-        weights = wei
+        fdata = aflux[:,w]/wei
+        weights=wei
         for i in range(nit):
-            fmean = np.sum(fdata * weights) / np.sum(weights)
-            fsig = np.sqrt(np.sum((fdata - fmean)**2 * weights) / np.sum(weights))
-            faux = fdata
-            cont = 0
-            for j, fj in enumerate(faux):
-                if fj < (fmean - sigma*fsig) or fj > (fmean + sigma*fsig):
-                    fdata = np.delete(fdata, j - cont)
-                    weights = np.delete(weights, j - cont)
-                    cont += 1
-        fmean = np.sum(fdata * weights) / np.sum(weights)
+            fmean = np.sum(fdata*weights)/np.sum(weights)
+            fsig=np.sqrt(np.sum((fdata-fmean)**2*weights)/np.sum(weights))
+            faux=fdata
+            cont=0
+            for j,fj in enumerate(faux):
+                if fj < (fmean-sigma*fsig) or fj > (fmean+sigma*fsig):
+                    fdata=np.delete(fdata, j-cont)
+                    weights=np.delete(weights,j-cont)
+                    cont+=1
+        fmean = np.sum(fdata*weights)/np.sum(weights)
+        fsig=np.sqrt(np.sum((fdata-fmean)**2)/np.sum(weights))
         s_mean.append(fmean)
-    return np.array(s_mean)
+    return(np.array(s_mean))
             
-def setregion(wreg, delta, winf, wsup, amort=0.1):
-    reg1 = wreg.split(',')
-    reg2 = []
-    for i, str1 in enumerate(reg1):
-        reg2.append([int(str1.split('-')[0]), int(str1.split('-')[1])])
-    reg3 = []
-    stat1 = True
-    for j, wvx in enumerate(reg2):
-        x1 = wvx[0]
-        x2 = wvx[1]
+def setregion(wreg,delta,winf,wsup,amort=0.1):
+    reg1=wreg.split(',')
+    reg2=[]
+    for i,str1 in enumerate(reg1):
+        reg2.append([int(str1.split('-')[0]),int(str1.split('-')[1])])
+    reg3=[]
+    stat1=True
+    for j,wvx in enumerate(reg2):
+        x1=wvx[0]
+        x2=wvx[1]
         if stat1:
-            if x1 >= winf:
+            if x1>=winf:
                 reg3.append(wvx)
-                stat1 = False
-            elif x1 < winf and x2 > winf:
-                wvx[0] = winf
+                stat1=False
+            elif x1<winf and x2>winf:
+                wvx[0]=winf
                 reg3.append(wvx)
-                stat1 = False
-            elif x1 < winf and x2 <= winf:
-                stat1 = True
+                stat1=False
+            elif x1<winf and x2<=winf:
+                stat1=True
         else:
-            if x1 > wsup and x2 > wsup:
+            if x1>wsup and x2>wsup:
                 break
-            elif x1 < wsup and x2 >= wsup:
-                wvx[1] = wsup
+            elif x1<wsup and x2>=wsup:
+                wvx[1]=wsup
                 reg3.append(wvx)
-            elif x1 < wsup and x2 < wsup:
+            elif x1<wsup and x2<wsup:
                 reg3.append(wvx)
-    wvl = np.arange(reg3[0][0], reg3[-1][1] + delta, delta)
-    f = np.zeros(len(wvl))
-    for k, interv in enumerate(reg3):
-        x1 = interv[0]
-        x2 = interv[1]
+    wvl=np.arange(reg3[0][0],reg3[-1][1]+delta,delta)
+    f=np.zeros(len(wvl))
+    for k,interv in enumerate(reg3):
+        x1=interv[0]
+        x2=interv[1]
         i1 = np.abs(wvl - x1).argmin(0)
         i2 = np.abs(wvl - x2).argmin(0)
-        am2 = amort * (x2 - x1)
-        xarr = wvl[i1:i2]
-        mask = np.zeros(len(xarr))
-        for k, w in enumerate(xarr):
-            if w <= (x1 + am2):
-                mask[k] = np.sin(np.pi * (w - x1)/(2 * am2))
-            elif w > (x1 + am2) and w < (x2 - am2):
-                mask[k] = 1
+        am2=amort*(x2-x1)
+        xarr=wvl[i1:i2]
+        mask=np.zeros(len(xarr))
+        for k,w in enumerate(xarr):
+            if w<=(x1+am2):
+                mask[k]=np.sin(np.pi*(w-x1)/(2*am2))
+            elif w>(x1+am2) and w<(x2-am2):
+                mask[k]=1
             else:
-                mask[k] = np.cos(np.pi * (w - x2 + am2)/(2 * am2))
-        f[i1:i2] = mask
-    return wvl, f
+                mask[k]=np.cos(np.pi*(w-x2+am2)/(2*am2))
+        f[i1:i2]=mask
+    return(wvl,f)
 
-def continuum(w, f, order=12, type='fit', lo=2, hi=3, nit=10, graph=True):
-    # Crear spline3 localmente si es necesario
-    from specutils.manipulation import SplineInterpolatedResampler
-    spline3 = SplineInterpolatedResampler()
-    
-    w_cont = w.copy()
-    f_cont = f.copy()
-    sigma0 = np.std(f_cont)
-    wei = ~np.isnan(f_cont) * 1
-    i = 1
-    nrej1 = 0
+def continuum(w,f, order=12, type='fit', lo=2, hi=3, nit=10, graph=True):
+    w_cont=w.copy()
+    f_cont=f.copy()
+    sigma0=np.std(f_cont)
+    wei=~np.isnan(f_cont)*1
+    i=1
+    nrej1=0
     while i < nit:
-        c0 = np.polynomial.chebyshev.Chebyshev.fit(w_cont, f_cont, order, w=wei)(w_cont)
-        resid = f_cont - c0
-        sigma0 = np.sqrt(np.average((resid)**2, weights=wei))
-        wei = 1 * np.logical_and(resid > -lo*sigma0, resid < sigma0*hi)
-        nrej = len(wei) - np.sum(wei)
-        if nrej == nrej1:
+        c0=np.polynomial.chebyshev.Chebyshev.fit(w_cont,f_cont,order,w=wei)(w_cont)
+        resid=f_cont-c0
+        sigma0=np.sqrt(np.average((resid)**2, weights=wei))
+        wei = 1*np.logical_and(resid>-lo*sigma0,resid<sigma0*hi)
+        nrej=len(wei)-np.sum(wei)
+        if nrej==nrej1:
             break
-        nrej1 = nrej
-        i = i + 1
-    s1 = Spectrum(flux=c0*u.Jy, spectral_axis=w_cont*0.1*u.nm) 
-    c1 = fit_continuum(s1, model=Chebyshev1D(order), fitter=LinearLSQFitter())
-    if type == 'fit':
-        fout = c1(w*0.1*u.nm).value
-    elif type == 'ratio':
-        fout = f_cont / c1(w*0.1*u.nm).value
-    elif type == 'diff':
-        fout = f_cont - c1(w*0.1*u.nm).value
+        nrej1=nrej
+        i=i+1
+    s1=Spectrum(flux=c0*u.Jy, spectral_axis=w_cont*0.1*u.nm) 
+    c1= fit_continuum(s1, model=Chebyshev1D(order),fitter=LinearLSQFitter())
+    if type=='fit':
+        fout=c1(w*0.1*u.nm).value
+    elif type=='ratio':
+        fout=f_cont/c1(w*0.1*u.nm).value
+    elif type=='diff':
+        fout=f_cont-c1(w*0.1*u.nm).value
     if graph:
-        fig = plt.figure(figsize=[20, 10])
+        fig = plt.figure(figsize=[20,10])
         ngrid = gridspec.GridSpec(ncols=1, nrows=2, height_ratios=[5, 1])
         ax1 = fig.add_subplot(ngrid[0])
         plt.setp(ax1.get_xticklabels(), visible=False)
         plt.ylabel('Flux')
-        ax1.plot(w, f, color='gray')
-        ax1.plot(w_cont, f_cont, color='blue', linestyle='', marker='.', markersize=2)
-        ax1.plot(w_cont, c1(w_cont*0.1*u.nm).value, c='r', linestyle='--')
-        ax2 = fig.add_subplot(ngrid[1], sharex=ax1, sharey=ax1)
+        ax1.plot(w,f,color='gray')
+        ax1.plot(w_cont,f_cont,color='blue',linestyle='',marker='.',markersize=2)
+        ax1.plot(w_cont,c1(w_cont*0.1*u.nm).value,c='r',linestyle='--')
+        ax2 = fig.add_subplot(ngrid[1], sharex=ax1,sharey=ax1)
         plt.xlabel('Wavelength [nm]')
-        ax2.plot(w, (f - c1(w*0.1*u.nm).value), color='gray', linestyle='', marker='.', markersize=1)
-        ax2.plot(w_cont, (f_cont - c1(w_cont*0.1*u.nm).value), color='blue', linestyle='', marker='.', markersize=1)
-        ax2.axhline(y=0, color='red', linestyle='--', linewidth=1)
+        ax2.plot(w,(f-c1(w*0.1*u.nm).value),color='gray',linestyle='',marker='.',markersize=1)
+        ax2.plot(w_cont,(f_cont-c1(w_cont*0.1*u.nm).value),color='blue',linestyle='',marker='.',markersize=1)
+        ax2.axhline(y=0, color='red', linestyle='--',linewidth=1)
         plt.tight_layout()
         plt.show()
-    return fout
+    return(fout)
     
 def on_key(event):
-    global yours, nmin, rv1, rv2, gbase, xcent
-    yours = event.key
-    if event.key == 'y' or event.key == 'Y':
+    global yours,nmin,rv1,rv2,gbase,xcent
+    #print('You pressed: ', event.key)
+    yours=event.key
+    #print('x = ',event.xdata)
+    #print('y = ',event.ydata)
+    if event.key=='y' or event.key=='Y':
         plt.close()
-    elif event.key == 'm' or event.key == 'M':
+    elif event.key=='m' or event.key=='M':
         if nmin:
-            rv1 = event.xdata
-            print('RV min: ' + str(round(rv1, 3)) + ' km/s')
-            nmin = False
+            rv1=event.xdata
+            print('RV min: '+str(round(rv1,3))+' km/s')
+            nmin=False
         else:
-            rv2 = event.xdata
-            print('RV max: ' + str(round(rv2, 3)) + ' km/s')
-            nmin = True
-            yours = 'r'
+            rv2=event.xdata
+            print('RV max: '+str(round(rv2,3))+' km/s')
+            nmin=True
+            yours='r'
             plt.close()
-    elif event.key == 'b' or event.key == 'B':
-        gbase = event.ydata
+    elif event.key=='b' or event.key=='B':
+        gbase=event.ydata
         plt.close()
-    elif event.key == 'c' or event.key == 'C':
-        xcent = event.xdata
-        rv1 = xcent - 10
-        rv2 = xcent + 10
+    elif event.key=='c' or event.key=='C':
+        xcent=event.xdata
+        rv1=xcent-10
+        rv2=xcent+10
         plt.close()
     event.canvas.draw()
 
@@ -1434,163 +1267,146 @@ def Gauss(x, a, x0, sigma):
     return a * np.exp(-(x - x0)**2 / (2 * sigma**2))
     
 def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
-    # Crear spline3 localmente
-    from specutils.manipulation import SplineInterpolatedResampler
-    spline3 = SplineInterpolatedResampler()
-    
-    global yours, nmin, rv1, rv2, gbase, xcent
-    nmin = True
+    global yours,nmin,rv1,rv2,gbase,xcent
+    nmin=True
     plt.ioff()
-    
-    # adjust continuum
+    #adjust continuum
     if fitcont:
-        fci = continuum(w=w, f=f, type='diff', graph=False)
-        fct = continuum(w=wt, f=ft, type='diff', graph=False)
+        fci=continuum(w=w, f=f, type='diff', graph=False)
+        fct=continuum(w=wt, f=ft, type='diff', graph=False)
     else:
-        fci = f
-        fct = f
-    
-    # convert grid to ln w
-    aux_grid = np.log(w)
+        fci=f
+        fct=f
+    #convert grid to ln w
+    aux_grid=np.log(w)
     dlog = aux_grid[-1] - aux_grid[-2]
-    new_log_grid = np.arange(aux_grid[0], aux_grid[-1], dlog)
-    
-    # rescale mask
+    new_log_grid=np.arange(aux_grid[0],aux_grid[-1],dlog)
+    #rescale mask
     aux_mask = Spectrum(flux=mask*u.Jy, spectral_axis=np.log(w)*0.1*u.nm)
-    aux2_mask = spline3(aux_mask, new_log_grid*0.1*u.nm)
+    aux2_mask= spline3(aux_mask, new_log_grid*0.1*u.nm)
     log_mask = splineclean(aux2_mask.flux.value)
-    
-    # rescale image spectrum
+    #rescale image spectrum
     aux_img = Spectrum(flux=fci*u.Jy, spectral_axis=np.log(w)*0.1*u.nm)
     aux2_img = spline3(aux_img, new_log_grid*0.1*u.nm)
-    log_img = splineclean(aux2_img.flux.value)
-    fi2 = log_img * log_mask
-    
-    # rescale template spectrum
+    log_img=splineclean(aux2_img.flux.value)
+    fi2=log_img*log_mask
+    #rescale template spectrum
     aux_sa = Spectrum(flux=fct*u.Jy, spectral_axis=np.log(wt)*0.1*u.nm)
     aux2_sa = spline3(aux_sa, new_log_grid*0.1*u.nm)
     log_tmp = splineclean(aux2_sa.flux.value)
-    ft2 = log_tmp * log_mask
-    
-    # execute correlate
-    cc1 = signal.correlate(fi2, ft2, method='fft')
-    
-    # uniformize cc1
-    cc1 = cc1/(np.sqrt(np.sum(np.power(fi2, 2))) * (np.sqrt(np.sum(np.power(ft2, 2)))))
-    
-    # find peak value
-    i1 = np.where(cc1 == max(cc1))[0][0]
-    
-    # x-lags for cc1
-    lamlog1 = new_log_grid - new_log_grid[0]
-    lamlog2 = -new_log_grid + new_log_grid[0]
+    ft2=log_tmp*log_mask
+    #execute correlate
+    cc1=signal.correlate(fi2,ft2,method='fft')
+    #uniformize cc1
+    cc1=cc1/(np.sqrt(np.sum(np.power(fi2,2)))*(np.sqrt(np.sum(np.power(ft2,2)))))
+    #find peak value
+    i1=np.where(cc1==max(cc1))[0][0]
+    #x-lags for cc1
+    lamlog1=new_log_grid-new_log_grid[0]
+    lamlog2=-new_log_grid+new_log_grid[0]
     lamlog2.sort()
-    llog = np.concatenate((lamlog2[0:-1], lamlog1), axis=0)
-    axisrv = llog * c.value / 1000
-    
-    # adjust 
-    if rvcent is None:
-        ccmax = np.argmax(cc1)
-        xcent = axisrv[ccmax]
+    llog=np.concatenate((lamlog2[0:-1],lamlog1),axis=0)
+    axisrv=llog*c.value/1000
+    #adjust 
+    if rvcent==None:
+        ccmax=np.argmax(cc1)
+        xcent=axisrv[ccmax]
     else:
-        xcent = rvcent
-    
-    stat = True
-    rv1 = xcent - 10
-    rv2 = xcent + 10
-    gbase = np.mean(cc1)
-    nach = 0
-    
+        xcent=rvcent
+    stat=True
+    rv1=xcent-10
+    rv2=xcent+10
+    gbase=np.mean(cc1)
+    nach=0
     while stat:
-        near0 = axisrv.flat[np.abs(axisrv - xcent).argmin()]
-        i0 = np.where(axisrv == near0)[0][0]
-        near1 = axisrv.flat[np.abs(axisrv - min(rv1, rv2)).argmin()]
-        i1 = np.where(axisrv == near1)[0][0]
-        near2 = axisrv.flat[np.abs(axisrv - max(rv1, rv2)).argmin()]
-        i2 = np.where(axisrv == near2)[0][0]
+        near0=axisrv.flat[np.abs(axisrv - xcent).argmin()]
+        i0=np.where(axisrv == near0)[0][0]
+        near1=axisrv.flat[np.abs(axisrv - min(rv1,rv2)).argmin()]
+        i1=np.where(axisrv == near1)[0][0]
+        near2=axisrv.flat[np.abs(axisrv - max(rv1,rv2)).argmin()]
+        i2=np.where(axisrv == near2)[0][0]
         try:
-            xb = axisrv[i1:i2]
-            yb = cc1[i1:i2]
-            mb = np.sum(xb * (yb - gbase)) / np.sum(yb - gbase)
-            sigb = np.sqrt(np.abs(np.sum((yb - gbase) * (xb - mb)**2) / np.sum(yb - gbase)))
-            # pb1 contains CCF peak, RV and sigma
-            pb1, pb2 = curve_fit(Gauss, xb, yb - gbase, p0=[np.max(yb - gbase), mb, sigb])
-            # for initial approach recalculate gbase
-            if nach == 0:
-                mod_rv1 = axisrv.flat[np.abs(axisrv - (xcent - pb1[2]*5)).argmin()]
-                mod_i1 = np.where(axisrv == mod_rv1)[0][0]
-                mod_rv2 = axisrv.flat[np.abs(axisrv - (xcent + pb1[2]*5)).argmin()]
-                mod_i2 = np.where(axisrv == mod_rv2)[0][0]
-                # calculate most probable value
-                gbase = min(cc1[mod_i1:mod_i2])
-                xb = axisrv[i1:i2]
-                yb = cc1[i1:i2]
-                mb = np.sum(xb * (yb - gbase)) / np.sum(yb - gbase)
-                sigb = np.sqrt(np.abs(np.sum((yb - gbase) * (xb - mb)**2) / np.sum(yb - gbase)))
-                pb1, pb2 = curve_fit(Gauss, xb, yb - gbase, p0=[np.max(yb - gbase), mb, sigb])
-                nach = 1
-            ybgauss = Gauss(xb, *pb1) + gbase
-            xrv = pb1[1]
-            # error in the gaussian fitting
+            xb=axisrv[i1:i2]
+            yb=cc1[i1:i2]
+            mb = np.sum(xb * (yb-gbase)) / np.sum(yb-gbase)
+            sigb = np.sqrt(np.abs(np.sum((yb-gbase) * (xb - mb)**2) / np.sum(yb-gbase)))
+            #pb1 contains CCF peak, RV and sigma
+            pb1,pb2 = curve_fit(Gauss, xb, yb-gbase, p0=[np.max(yb-gbase), mb, sigb])
+            #for initial approach recalculate gbase
+            if nach==0:
+                mod_rv1=axisrv.flat[np.abs(axisrv - (xcent-pb1[2]*5)).argmin()]
+                mod_i1=np.where(axisrv == mod_rv1)[0][0]
+                mod_rv2=axisrv.flat[np.abs(axisrv - (xcent+pb1[2]*5)).argmin()]
+                mod_i2=np.where(axisrv == mod_rv2)[0][0]
+                #calculate most probable value
+                gbase=min(cc1[mod_i1:mod_i2])
+                xb=axisrv[i1:i2]
+                yb=cc1[i1:i2]
+                mb = np.sum(xb * (yb-gbase)) / np.sum(yb-gbase)
+                sigb = np.sqrt(np.abs(np.sum((yb-gbase) * (xb - mb)**2) / np.sum(yb-gbase)))
+                pb1,pb2 = curve_fit(Gauss, xb, yb-gbase, p0=[np.max(yb-gbase), mb, sigb])
+                nach=1
+            ybgauss=Gauss(xb, *pb1)+gbase
+            xrv=pb1[1]
+            #error in the gaussian fitting
             rverr = np.sqrt(np.diag(pb2))[1]
-            sfit = True
-            # Error in RV estimated by Tonry and Davies work
-            iran = int(2000 * 1000/(c.value * dlog))
-            # cropcc regions with rvrange parameter
-            reg2 = axisrv[i1-iran:i1+iran]
-            fcc2 = cc1[i1-iran:i1+iran]
-            # filter low frequencies in cc function
-            ccnew = continuum(w=reg2, f=fcc2, order=4, type='diff', graph=False)
+            sfit=True
+            #Error in RV estimated by Tonry and Davies work
+            iran=int(2000*1000/(c.value*dlog))
+            #cropcc regions with rvrange parameter
+            reg2=axisrv[i1-iran:i1+iran]
+            fcc2=cc1[i1-iran:i1+iran]
+            #filter low frequencies in cc function
+            ccnew=continuum(w=reg2, f=fcc2, order=4, type='diff', graph=False)
             # estimate sigma antisymmetric noise
-            cc1_neg = ccnew[0:iran]
-            cc1_pos = ccnew[iran:iran*2]
+            cc1_neg=ccnew[0:iran]
+            cc1_pos=ccnew[iran:iran*2]
             dif_neg = cc1_neg - cc1_pos[::-1]
             dif_pos = cc1_pos - cc1_neg[::-1]
-            cc_anti = np.concatenate((dif_neg, dif_pos))
+            cc_anti = np.concatenate((dif_neg,dif_pos))
             sig_anti = np.std(cc_anti)
-            r = np.max(ccnew)/(np.sqrt(2 * sig_anti))
-            # calculate FFT
-            wfreq1 = fft(ccnew)
-            nmed = int(len(wfreq1.imag)/4)
-            ys2 = np.log(np.sqrt(wfreq1.real[1:nmed]**2 + wfreq1.imag[1:nmed]**2))
-            ys2 = ys2 - ys2[-1]
-            xs2 = np.arange(1, nmed, 1)
-            # fit gaussian function without weights
-            aux_x = np.concatenate((-1*xs2[::-1], xs2))
-            aux_y = np.concatenate((ys2[::-1], ys2))
-            az = np.where(aux_y == 0)
-            aux_y[az] = 1e-10
+            r = np.max(ccnew)/(np.sqrt(2*sig_anti))
+            #calculate FFT
+            wfreq1=fft(ccnew)
+            nmed=int(len(wfreq1.imag)/4)
+            ys2=np.log(np.sqrt(wfreq1.real[1:nmed]**2+wfreq1.imag[1:nmed]**2))
+            ys2=ys2-ys2[-1]
+            xs2=np.arange(1,nmed,1)
+            # fit gaussian function without wieghts
+            aux_x=np.concatenate((-1*xs2[::-1],xs2))
+            aux_y=np.concatenate((ys2[::-1],ys2))
+            az=np.where(aux_y==0)
+            aux_y[az]=1e-10
             p1, pc1 = curve_fit(doubleG, aux_x, aux_y)
-            # error for gaussian at half maximum
-            B_exp1 = p1[1] * 2.35482 / 2
-            err_g1 = len(wfreq1)/(16 * B_exp1 * (1 + r)) + rverr
-            serr = str(round(err_g1, 3))
+            #error for gaussian at half maximum
+            B_exp1 = p1[1]*2.35482/2
+            err_g1 = len(wfreq1)/(16*B_exp1*(1+r))+rverr
+            serr=str(round(err_g1,3))
         except Exception:
-            xrv = axisrv[np.argmax(cc1)]
-            sfit = False
+            xrv=axisrv[np.argmax(cc1)]
+            sfit=False
             err_g1 = np.nan
-            serr = str(err_g1)
-        print('Radial Velocity: ' + str(round(xrv, 3)) + ' +/- ' + serr + ' km/s')
-        
-        # graphicate
+            serr=str(err_g1)
+        print('Radial Velocity: '+str(round(xrv,3))+' +/- '+serr+' km/s')
+        #graphicate
         if interac:
-            fig, (a0, a1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 5]})
+            fig, (a0, a1) = plt.subplots(2,1, gridspec_kw = {'height_ratios':[1, 5]})
             plt.setp(a0.get_yticklabels(), visible=False)
             plt.setp(a0.get_xticklabels(), visible=False)
             a0.yaxis.offsetText.set_visible(False)
-            a0.plot(axisrv, cc1, color='blue')
-            a0.axvline(axisrv[i0], color='red', linestyle='--', linewidth=1)
+            a0.plot(axisrv,cc1,color='blue')
+            a0.axvline(axisrv[i0], color='red', linestyle='--',linewidth=1)
             a1.set_xlabel("Radial Velocity [km/s]", fontsize=10)
             a1.set_ylabel("Correlation", fontsize=10)
-            a1.plot(axisrv, cc1, color='blue')
+            a1.plot(axisrv,cc1,color='blue')
             a1.set(xlim=(axisrv[i1-10], axisrv[i2+10]))
-            ymin2 = min(cc1[i1:i2])
-            ymax2 = max(cc1[i1:i2])
-            ex2 = (ymax2 - ymin2) * 0.1
-            a1.set(ylim=(ymin2 - ex2, ymax2 + ex2))
+            ymin2=min(cc1[i1:i2])
+            ymax2=max(cc1[i1:i2])
+            ex2=(ymax2-ymin2)*0.1
+            a1.set(ylim=(ymin2-ex2, ymax2+ex2))
             if sfit:
-                plt.plot(xb, yb, color='black', marker='.', linestyle='')
-                plt.plot(xb, ybgauss, color='green', label='fit', linestyle='--')
+                plt.plot(xb, yb, color='black',marker='.',linestyle='')
+                plt.plot(xb, ybgauss, color='green', label='fit',linestyle='--')
             else:
                 plt.legend(('No fit'))
             plt.tight_layout()
@@ -1620,34 +1436,35 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
 @jit(nopython=True)
 def splineclean(fspl):
     if np.isnan(fspl[0]):
-        cinit = 1
+        cinit=1
         while np.isnan(fspl[cinit]):
-            cinit += 1
-        finit = fspl[cinit]
-        fspl[0:cinit+1] = finit
+            cinit+=1
+        finit=fspl[cinit]
+        fspl[0:cinit+1]=finit
     if np.isnan(fspl[-1]):
-        cend = -2
+        cend=-2
         while np.isnan(fspl[cend]):
-            cend -= 1
-        fend = fspl[cend]
-        fspl[cend:len(fspl)] = fend
-    return fspl
+            cend-=1
+        fend=fspl[cend]
+        fspl[cend:len(fspl)]=fend
+    return(fspl)
 
-def copyheader(img1, imgout):
-    # CORREGIDO: usar with
-    with fits.open(img1, mode='readonly') as hdul:
-        with fits.open(imgout, mode='readonly') as hnorm:
-            listk = ('CDELT1', 'CTYPE1', 'BUNIT', 'ORIGIN', 'DATE', 'TELESCOP', 'INSTRUME',
-                     'OBJECT', 'RA', 'DEC', 'EQUINOX', 'RADECSYS', 'EXPTIME', 'MJD-OBS', 'DATE-OBS', 'UTC', 'LST',
-                     'PI-COI', 'CTYPE1', 'CTYPE2', 'ORIGFILE', 'UT', 'ST', 'AIRMASS', 'VRA', 'VRB')
-            for i, k in enumerate(listk):
-                try:
-                    hnorm[0].header[k] = hdul[0].header[k]
-                except KeyError:
-                    print('Keyword ' + k + ' not found')
-            hnorm.flush(output_verify='ignore')
+def copyheader(img1,imgout):
+    hdul = fits.open(img1, mode='readonly')
+    hnorm =  fits.open(imgout, mode='readonly')
+    listk=('CDELT1','CTYPE1','BUNIT','ORIGIN','DATE','TELESCOP','INSTRUME',
+           'OBJECT','RA','DEC','EQUINOX','RADECSYS','EXPTIME','MJD-OBS','DATE-OBS','UTC','LST',
+           'PI-COI','CTYPE1','CTYPE2','ORIGFILE','UT','ST','AIRMASS','VRA','VRB')
+    for i,k in enumerate(listk):
+        try:
+            hnorm[0].header[k] = hdul[0].header[k]
+        except KeyError:
+            print('Keyword '+k+' not found')
+    hnorm.flush(output_verify='ignore')
+    hnorm.close(output_verify='ignore')
+    hdul.close(output_verify='ignore')
 
-def listmp(ruta=getcwd()):
+def listmp(ruta = getcwd()):
     return [abspath(arch.path) for arch in scandir(ruta) if arch.is_file()]
 
 def doubleG(x, a, sigma):
