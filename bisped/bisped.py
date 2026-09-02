@@ -3,14 +3,13 @@
 """
 bisped - Binary Spectral Disentangling (v1.7)
 Interfaz pública del paquete.
+
+Esta es la interfaz que los usuarios deben importar.
+Todas las funciones principales están disponibles aquí.
 """
 
-import multiprocessing as mp
-import gc
-import sys
-
-# Importar todas las funciones públicas desde el núcleo
-from bisped_core import (
+# Importar funciones públicas desde el núcleo
+from .bisped_core import (
     find2c,
     hselect,
     onecomp,
@@ -21,16 +20,26 @@ from bisped_core import (
     splot,
     uniform,
     vgrid,
-    vexplore
+    vexplore,
 )
 
-# Configurar spawn
-try:
-    mp.set_start_method('spawn', force=True)
-except RuntimeError:
-    pass
+# Versión del paquete
+__version__ = "1.7"
 
+# Banner de presentación (se muestra SOLO si se ejecuta el script directamente)
 if __name__ == "__main__":
-    print("====================================\nBinary Spectral Disentangling (v1.7)\n====================================\n")
-    print("Available functions list:\n")
-    print("\tfind2c\n\thselect\n\tonecomp\n\tqfitg\n\trvbina\n\tsetrvs\n\tspbina\n\tsplot\n\tuniform\n\tvgrid\n\tvexplore\n\n")
+    print("====================================")
+    print("Binary Spectral Disentangling (v1.7)")
+    print("====================================\n")
+    print("Available functions:\n")
+    print("\tfind2c    - Cross-correlation for mass ratio and Teff")
+    print("\thselect   - Extract FITS header keywords")
+    print("\tonecomp   - Compare a spectrum with a template list")
+    print("\tqfitg     - Gaussian fitting to q profiles")
+    print("\trvbina    - Radial velocity iterative refinement")
+    print("\tsetrvs    - Set radial velocities")
+    print("\tspbina    - Compute primary and secondary spectra")
+    print("\tsplot     - Plot a FITS spectrum")
+    print("\tuniform   - Normalize spectra to a common continuum")
+    print("\tvgrid     - Explore systemic RV grid")
+    print("\tvexplore  - Explore vgrid results interactively")
