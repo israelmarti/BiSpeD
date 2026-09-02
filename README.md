@@ -2,17 +2,16 @@
 
 The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy applications. The package includes tasks to manipulate and process spectral observations of binary stars; the main goal of this development is finds and extracts the spectral features of the secondary companion star.
 
-
  ## Introduction
 
-The BiSpeD (v1.4) code allows to estimate the mass ratio among companions (*q*-value). The spectral features of primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. Eventually, the BiSpeD code works through specific functions (tasks) with them aims. In *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented.
+The BiSpeD (v1.7) code allows to estimate the mass ratio among companions (*q*-value). The spectral features of primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. Eventually, the BiSpeD code works through specific functions (tasks) with them aims. In *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented.
 
 ## Installation
 
 BiSpeD is distributed on PyPI as a universal wheel and is available on Linux/macOS and Windows and supports Python 3.12.
 
 ```bash
-pip install git+https://github.com/israelmarti/bisped#egg=bisped
+pip install git+https://github.com/israelmarti/bisped@v1.7
 ```
 For optimized interactive useful run from [IPython](https://ipython.org/install.html).
 
@@ -24,6 +23,7 @@ BiSpeD requires the latest dependencies for Python 3.12:
 - [Numba](https://numba.pydata.org) (v0.62.1)
 - [Numpy](https://www.numpy.org)  (v2.3.2)
 - [Progress](https://pypi.org/project/progress) (v1.6.1)
+- [psutil]([https://pypi.org/project/progress](https://psutil.io/install/)  (v5.9.0)
 - [PyAstronomy](https://pyastronomy.readthedocs.io) (v0.24.0)
 - [SciPy](https://scipy.org) (v1.16.1)
 - [Specutils](https://specutils.readthedocs.io) (v2.2.0)
@@ -47,11 +47,11 @@ BiSpeD requires the latest dependencies for Python 3.12:
 > - `qmax`: maximum mass ratio for cross-correlation grid (float);    
 > - `deltaq`: mass increments for cross-correlation grid (float);
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among "-" and the different regions joined with ' " , ";
-> - `nproc`: number of parallel processes to use in computing; it depends on computer resources (integer).
+> - `nproc`: number of parallel processes to use in computing; if set to None (default), the optimal number is automatically estimated based on available RAM and number of spectra (float).
 > 
 > Example:
 ```python3
-find2c('@lista', '/home/user/templates', wreg='4000-4320,4360-4850,4875-5900', nproc=8)
+find2c('@lista', '/home/user/templates', wreg='4000-4320,4360-4850,4875-5900', nproc=None)
 ```
 
 - **hselect**
@@ -60,6 +60,29 @@ find2c('@lista', '/home/user/templates', wreg='4000-4320,4360-4850,4875-5900', n
 > Example:
 ```python3
 hselect('@lista', 'object')
+```
+- **onecomp**
+> Compare a single spectrum with a list of templates to determine the best matching effective temperature. It returns a correlation plot. Mandatory parameters: `img` (spectrum file) and `lit` (folder with templates). Optional: `wreg` (regions for correlation).
+> 
+> Example:
+```python3
+onecomp('obs001.fits', '/home/user/templates', wreg='4000-4500')
+```
+
+- **qfitg**
+> Fits a Gaussian profile to the maximum correlation value (qmed) extracted from the cross‑correlation matrices produced by `find2c` or `vgrid`. It estimates the peak amplitude, centroid (q), sigma, offset (continuum level), and noise. Results can be saved to a CSV file and interactive plots are shown for each file.
+> 
+> Parameters:
+> - `lista`: file list (or list of FITS files) containing the correlation matrices (string);
+> - `ordcon`: order of the continuum fitting polynomial (integer, default=1);
+> - `output_csv`: name of the output CSV file (string, default="output.csv");
+> - `graph`: show interactive plots (boolean, default=True);
+> - `save`: save results to CSV (boolean, default=True).
+
+> 
+> Example:
+```python3
+qfitg('@lista', ordcon=2, output_csv='results.csv', graph=True)
 ```
 
 - **rvbina**
@@ -82,14 +105,6 @@ hselect('@lista', 'object')
 > Example:
 ```python3
 rvbina('@lista', spa='sp_A', spb='sp_B', wreg='3550-4700,4850-5680', keyjd='HJD', fitcont=True)
-```
-
-- **rvextract**
-> Analyze the convergence of iterative **rvbina** task for a spectra file list (mandatory parameter `lis`, string variable type). The optional parameters are `output` (string) to write a file with RV values and `graphic` (boolean) to show the RV convergence as a function of iteration number.
-> 
-> Example:
-```python3
-rvextract('@lista', output='file_RVs.txt', graph=True)
 ```
 
 - **setrvs**
@@ -179,9 +194,12 @@ vexplore('output_00/')
 > - `qmax`: maximum mass ratio for cross-correlation grid (float);     
 > - `deltaq`: mass increments for cross-correlation grid (float);
 > - `wreg`: spectral regions for cross-correlation analysis (string). The selected region is specified among '-' and the different regions joined with ','; example: 4000-4090,4110-4320,4360-4850,4875-5290,5350-5900;
-> - `nproc`: number of parallel processes to use in computing, it depends on computer resources (integer).
+> - `nproc`: number of parallel processes to use in computing, if `None` (default), it is automatically estimated (float).
 >
 > Example:
 ```python3
-vgrid('@lista', '/home/user/templates', svmin=4.6, svmax=8.1, step=0.2, qmin=0.1, qmax=0.45, nproc=8)
+vgrid('@lista', '/home/user/templates', svmin=4.6, svmax=8.1, step=0.2, qmin=0.1, qmax=0.45, nproc=None)
 ```
+
+License
+This project is licensed under the terms of the MIT license. See the LICENSE file for details.
