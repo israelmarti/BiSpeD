@@ -3,22 +3,9 @@
 BiSpeD - Binary Spectral Disentangling
 """
 
-from .bisped import (
-    find2c,
-    hselect,
-    onecomp,
-    qfitg,
-    rvbina,
-    rvextract,
-    setrvs,
-    spbina,
-    splot,
-    uniform,
-    vgrid,
-    vexplore
-)
+from .bisped import *
+from .bisped import __version__
 
-__version__ = "1.7"
 __all__ = [
     'find2c',
     'hselect',
@@ -30,5 +17,6 @@ __all__ = [
     'splot',
     'uniform',
     'vgrid',
-    'vexplore'
+    'vexplore',
+    '__version__'
 ]
