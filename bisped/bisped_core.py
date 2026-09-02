@@ -101,14 +101,12 @@ def suggest_nproc(larch, ram_fraction=0.9):
     if ram_limit <= 0:
         # Si no hay suficiente RAM para ningún proceso, devolver 1
         return 1
-    nproc_by_ram = int(ram_limit // mem_per_process)
+    nproc_by_ram = int(ram_limit / mem_per_process)
     if nproc_by_ram < 1:
         nproc_by_ram = 1
     # 7. Limitar por número de núcleos (físicos o lógicos)
     cpu_count = mp.cpu_count()
     nproc = min(nproc_by_ram, int(cpu_count*ram_fraction))
-    # 8. Asegurar que no exceda N (no tener más procesos que espectros)
-    nproc = min(nproc, N)
     print(f"Recommended number of processes: {nproc}")
     # 9. Devolver al menos 1
     return max(1, nproc)
