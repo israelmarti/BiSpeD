@@ -11,6 +11,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/israelmarti/BiSpeD",
+    include_package_data=True,
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
