@@ -138,12 +138,12 @@ setrvs('@lista', ta='/home/user/templates/04800-4.50.fits', interac=True)
 > 
 > Example for binary type SB2:
 ```python3
-setrvs('@lista', nit=10, frat=0.67, interac=True)
+spbina('@lista', nit=10, frat=0.67, interac=True)
 ```
 > 
 > Example for binary type SB1 (radial velocity for secondary companion unknown with determined mass ratio `q`):
 ```python3
-setrvs('@lista', nit=10, frat=0.67, q=0.81, vgamma=2.1, interac=True)
+spbina('@lista', nit=10, frat=0.67, q=0.81, vgamma=2.1, interac=True)
 ```
 
 - **splot**
