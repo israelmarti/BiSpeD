@@ -21,7 +21,7 @@ BiSpeD requires the latest dependencies for Python 3.12:
 - [Astropy](https://www.astropy.org) (v7.1.0)
 - [Matplotlib](https://matplotlib.org) (v3.10.6)
 - [Numba](https://numba.pydata.org) (v0.62.1)
-- [Numpy](https://www.numpy.org)  (v2.3.2)
+- [Numpy](https://www.numpy.org)  (v2.3.3)
 - [Progress](https://pypi.org/project/progress) (v1.6.1)
 - [psutil](https://psutil.io/install/)  (v5.9.0)
 - [PyAstronomy](https://pyastronomy.readthedocs.io) (v0.24.0)
