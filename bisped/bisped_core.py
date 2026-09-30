@@ -72,8 +72,6 @@ rv1 = None
 rv2 = None
 gbase = None
 xcent = None
-key_pressed = None
-new_value = None
 
 # ============================================================
 # Funciones internas auxiliares
@@ -103,7 +101,7 @@ def suggest_nproc(larch, ram_fraction=0.9):
     if ram_limit <= 0:
         # Si no hay suficiente RAM para ningún proceso, devolver 1
         return 1
-    nproc_by_ram = int(ram_limit /mem_per_process)
+    nproc_by_ram = int(ram_limit / mem_per_process)
     if nproc_by_ram < 1:
         nproc_by_ram = 1
     # 7. Limitar por número de núcleos (físicos o lógicos)
@@ -114,7 +112,7 @@ def suggest_nproc(larch, ram_fraction=0.9):
     return max(1, nproc)
     
 
-def plot_find2c_results(obj1, namefile ,q_array, vector_t, matrix_cc, path1, best_q, jt2, tmed, qmed):
+def plot_find2c_results(obj1, q_array, vector_t, matrix_cc, path1, best_q, jt2, tmed, qmed):
     """
     Genera, guarda y muestra el gráfico de resultados de find2c en modo interactivo.
     """
@@ -153,7 +151,7 @@ def plot_find2c_results(obj1, namefile ,q_array, vector_t, matrix_cc, path1, bes
     plt.axvline(x=vector_t[jt2], color='black', linestyle='--', linewidth=1)
 
     # Guardar imagen
-    outfile = os.path.join(path1, namefile + '.jpeg')
+    outfile = os.path.join(path1, obj1 + '_CC.jpeg')
     if os.path.isfile(outfile):
         os.remove(outfile)
     plt.savefig(outfile, dpi=100, bbox_inches='tight')
@@ -311,15 +309,6 @@ def continuum(w, f, order=12, type='fit', lo=2, hi=3, nit=10, graph=True):
         plt.close()
     return fout
 
-
-def key_cmc(event):
-    global key_pressed
-    key = event.key
-    if key in ['b', 'B', 'h', 'H', 'l', 'L', 'n', 'N', 'q', 'Q']:
-        key_pressed = key.lower()
-        # Detenemos el bucle de eventos de la figura
-        event.canvas.stop_event_loop()
-
 def on_key(event):
     global yours, nmin, rv1, rv2, gbase, xcent
     yours = event.key
@@ -405,6 +394,7 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
             pb1, pb2 = curve_fit(Gauss, xb, yb - gbase, p0=[np.max(yb - gbase), mb, sigb])
             if nach == 0:
                 mod_rv1 = axisrv.flat[np.abs(axisrv - (xcent - pb1[2]*5)).argmin()]
+                mod_i1 = np.where(axisrv == mod_rv1)[0][0]
                 mod_rv2 = axisrv.flat[np.abs(axisrv - (xcent + pb1[2]*5)).argmin()]
                 mod_i2 = np.where(axisrv == mod_rv2)[0][0]
                 gbase = min(cc1[mod_i1:mod_i2])
@@ -537,173 +527,12 @@ def doubleG(x, a, sigma):
     return a * np.exp(-(x)**2 / (2 * sigma**2))
 
 # ============================================================
-# Funciones principales: cmcrem, find2c, hselect, onecomp, qfitg, rvbina,
+# Funciones principales: find2c, hselect, onecomp, qfitg, rvbina,
 # rvextract, setrvs, spbina, splot,uniform,vgrid, vexplore
 # ============================================================
 
-def cmcrem(lis, keyrv='VRA', nit=5, lo=5, hi=2, box=3, ncont=6, outdir=None, suffix='_cmc', interac=True):
-    """
-    Elimina rayos cósmicos de una lista de espectros 1D FITS.
-    """
-    global key_pressed, new_value
-    key_pressed = None
-    new_value = None
-
-    spline3 = SplineInterpolatedResampler()
-    plt.close()
-    VerifyWarning('ignore')
-    larch = makelist(lis)
-
-    # ---- 1. Construir obs_matrix_original (una sola vez) ----
-    spectra_data = []
-    w0, f0 = pyasl.read1dFitsSpec(larch[0])
-    nwvl = len(w0)
-    obs_matrix_original = np.zeros((len(larch), nwvl))
-    norm_matrix = np.zeros((len(larch), nwvl))
-    cont_matrix = np.zeros((len(larch), nwvl))
-    for k, img in enumerate(larch):
-        wimg, fimg = pyasl.read1dFitsSpec(img)
-        with fits.open(img, mode='readonly') as hdul:
-            vra = hdul[0].header[keyrv]
-        w2 = wimg * np.sqrt((1. - vra / 299792.458) / (1. + vra / 299792.458))
-        aux_img = Spectrum(flux=fimg * u.Jy, spectral_axis=w2 * 0.1 * u.nm)
-        aux_img2 = spline3(aux_img, w0 * 0.1 * u.nm)
-        f2 = splineclean(aux_img2.flux.value)
-        f_cont=continuum(w0, f2, type='fit', nit=5, order=ncont, lo=2.5, hi=3.5, graph=False)
-        spectra_data.append((wimg, fimg, img, vra))
-        obs_matrix_original[k, :] = f2
-        cont_matrix[k, :] = f_cont
-        norm_matrix[k, :] = f2 / f_cont
-
-    print("Applying cosmic ray correction using local sigma")
-
-    # ---- 2. Bucle principal de corrección (se repite si se cambian parámetros) ----
-    while True:
-        # Reiniciar matriz desde la original
-        norm_matrix = obs_matrix_original / cont_matrix
-        half = box //2
-
-        # Aplicar corrección con los parámetros actuales
-        for it in range(nit):
-            cont = 0
-            print(f"  Iteration {it+1}/{nit}")
-            col_median = np.median(norm_matrix, axis=0)
-            for j in range(nwvl):
-                j_min = max(0, j - half)
-                j_max = min(nwvl-1, j + half)
-                window_flux = norm_matrix[:, j_min:j_max+1].flatten()
-                # Calcular mediana y MAD de la ventana
-                med_win = np.median(window_flux)
-                mad_win = np.median(np.abs(window_flux - med_win)) * 1.4826
-                fcomp = col_median[j]
-                for k in range(norm_matrix.shape[0]):
-                    fx = norm_matrix[k, j]
-                    if (fx < fcomp - lo * mad_win) or (fx > fcomp + hi * mad_win):
-                        norm_matrix[k, j] = fcomp
-                        cont += 1
-            print(f"    {cont} pixels replaced")
-            col_median = np.median(norm_matrix, axis=0)
-
-        # ---- 3. Interacción (solo si interac=True) ----
-        if interac:
-            # Mostrar el primer espectro
-            wori, fori, img, vra = spectra_data[0]
-            w3 = w0 * np.sqrt((1. + vra / 299792.458) / (1. - vra / 299792.458))
-            out_img = Spectrum(flux=norm_matrix[0, :] * cont_matrix[0, :] * u.Jy, spectral_axis=w3 * 0.1 * u.nm)
-            out_img2 = spline3(out_img, w0 * 0.1 * u.nm)
-            f3 = splineclean(out_img2.flux.value)
-
-            plt.ion()
-            fig = plt.figure(figsize=[15, 8])
-            plt.title('Spectrum ' + img + ' (press key)')
-            plt.xlabel('Wavelength [A]')
-            plt.ylabel('Flux')
-            plt.plot(wori, fori, color='red', ls='-', label='Original')
-            plt.plot(w0, f3, ls='--', marker='', color='blue', label='CMC removed')
-            plt.legend()
-            plt.tight_layout()
-
-            # Conectar evento y mostrar
-            fig.canvas.mpl_connect('key_press_event', key_cmc)
-            plt.show()
-            fig.canvas.start_event_loop(timeout=-1)   # Espera hasta que se presione una tecla
-            plt.close(fig)
-            plt.ioff()
-
-            # Procesar la tecla
-            if key_pressed == 'q':
-                break
-            elif key_pressed in ['b', 'h', 'l', 'n']:
-                # Pedir nuevo valor (fuera del event loop)
-                prompts = {
-                    'b': 'New box size (integer): ',
-                    'h': 'New hi threshold (float): ',
-                    'l': 'New lo threshold (float): ',
-                    'n': 'New number of iterations (integer): '
-                }
-                val = input(prompts[key_pressed])
-                try:
-                    if key_pressed in ['b', 'n']:
-                        new_val = int(val)
-                    else:
-                        new_val = float(val)
-                except ValueError:
-                    print("Invalid input. Keeping previous value.")
-                    key_pressed = None
-                    continue
-
-                # Asignar
-                if key_pressed == 'b':
-                    box = new_val
-                elif key_pressed == 'h':
-                    hi = new_val
-                elif key_pressed == 'l':
-                    lo = new_val
-                elif key_pressed == 'n':
-                    nit = new_val
-
-                key_pressed = None
-                continue   # recalcular
-            else:
-                # Cualquier otra tecla: salir y guardar
-                break
-        else:
-            # Sin interacción, salir del bucle
-            break
-
-    # ---- 4. Guardar todos los espectros con la última matriz corregida ----
-    outfiles = []
-    for k, (wori, fori, img, vra) in enumerate(spectra_data):
-        with fits.open(img, mode='readonly') as hdul:
-            header = hdul[0].header.copy()
-
-        # Regresar a la grilla de dispersión original (con la corrección aplicada)
-        w3 = w0 * np.sqrt((1. + vra / 299792.458) / (1. - vra / 299792.458))
-        out_img = Spectrum(flux=norm_matrix[k, :] * cont_matrix[k, :] * u.Jy, spectral_axis=w3 * 0.1 * u.nm)
-        out_img2 = spline3(out_img, w0 * 0.1 * u.nm)
-        f3 = splineclean(out_img2.flux.value)
-
-        # Modificar header para reflejar la nueva grilla
-        header['CRVAL1'] = w0[0]
-        header['CRPIX1'] = 1.0
-        header['CDELT1'] = w0[1] - w0[0]
-        header['NAXIS'] = 1
-        header['NAXIS1'] = nwvl
-        header['CTYPE1'] = 'WAVELEN'
-        header['CUNIT1'] = 'Angstrom'
-
-        basename = os.path.basename(img)
-        if outdir is None:
-            outdir = os.path.dirname(img) or '.'
-        outname = os.path.join(outdir, basename.replace('.fits', f'{suffix}.fits'))
-        pyasl.write1dFitsSpec(outname, f3, w0, clobber=True, header=header)
-        outfiles.append(outname)
-        print(f"  Save: {outname}")
-
-    print("¡Done!")
-
 def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
-           wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900', nproc=None, cpulimit=0.9, suffix=None):
+           wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900', nproc=None, cpulimit=0.9):
 
     plt.close('all')
     gc.collect()
@@ -796,7 +625,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
         temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2, hi=4, graph=False)
         aux_tmp1 = Spectrum(flux=temp_cont * u.Jy, spectral_axis=wt1 * 0.1 * u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid * 0.1 * u.nm)
-        template1 = splineclean(aux2_tmp1.flux.value) * fmask
+        template1 = splineclean(aux2_tmp1.flux.value * fmask)
         tt = np.mean(template1**2)
         for l, xq in enumerate(q_array):
             tb = np.mean((template1 * matrix_sq[l]))
@@ -808,15 +637,11 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
 
     # Guardar matriz de correlación
     vgindex = str(vgamma)
-    if suffix == None:
-        namew = obj1 + '_vg_' + vgindex
-    else:
-        namew = obj1 + '_vg_' + vgindex + '_' +str(suffix)
-    auxout = os.path.isfile(namew + '.fits')
+    auxout = os.path.isfile(obj1 + '_vg_' + vgindex + '.fits')
     if auxout:
-        os.remove(namew + '.fits')
-    fits.writeto(namew + '.fits', matrix_cc, overwrite=True)
-    with fits.open(namew + '.fits', mode='update', verify='ignore') as hcc:
+        os.remove(obj1 + '_vg_' + vgindex + '.fits')
+    fits.writeto(obj1 + '_vg_' + vgindex + '.fits', matrix_cc, overwrite=True)
+    with fits.open(obj1 + '_vg_' + vgindex + '.fits', mode='update', verify='ignore') as hcc:
         hcc[0].header['Q0'] = qmin
         hcc[0].header['Q1'] = qmax
         hcc[0].header['DELTA_Q'] = deltaq
@@ -843,7 +668,7 @@ def find2c(lis, lit, vgamma, spa='A', spb='B', qmin=0.02, qmax=0.5, deltaq=0.01,
     print('\t· · · · · · · · · · · · · ·')
 
     # Graficar resultados (modo no interactivo)
-    plot_find2c_results(obj1, namew, q_array, vector_t, matrix_cc, path1, best_q, jt2, tmed, qmed)
+    plot_find2c_results(obj1, q_array, vector_t, matrix_cc, path1, best_q, jt2, tmed, qmed)
     
 def hselect(img, fields):
     VerifyWarning('ignore')
@@ -916,7 +741,7 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
         temp_cont = continuum(wt1, ft1, order=50, nit=10, type='diff', lo=2, hi=4, graph=False)
         aux_tmp1 = Spectrum(flux=temp_cont*u.Jy, spectral_axis=wt1*0.1*u.nm)
         aux2_tmp1 = spline3(aux_tmp1, new_disp_grid*0.1*u.nm)
-        template1 = splineclean(aux2_tmp1.flux.value) * fmask
+        template1 = splineclean(aux2_tmp1.flux.value * fmask)
         tt = np.mean(template1**2)
         tb = np.mean((template1 * matrix_sq))
         matrix_cc[k] = tb/(np.sqrt(np.mean(matrix_sq**2)) * np.sqrt(tt))
@@ -930,22 +755,25 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
     plt.xlabel("Temp. [1000 K]", fontsize=9)
     plt.plot(vector_t, matrix_cc, marker='', ls='-', color='red')# Usar archivos temporales para evitar conflictos
 
-def qfitg(img, ordcon=1, output_csv="output.csv", graph=True, save=True):
+def qfitg(lista, ordcon=1, output_csv="output.csv", graph=True, save=True):
     """
     Procesa archivos FITS, ajusta gaussiana al perfil qmed (máximo a lo largo del eje Y)
     usando continuum para el fondo y Gauss para el pico.
     Guarda resultados en CSV y muestra gráficas interactivas.
     """
-    plt.ion()
     resultados = []
-    with fits.open(img, mode='update', verify='ignore') as hdul:
-        qmin = hdul[0].header['Q0']
-        qmax = hdul[0].header['Q1']
-        deltaq = hdul[0].header['DELTA_Q']
-        num_q = int(np.ceil((qmax - qmin) / deltaq)) + 1
-        q_array = np.linspace(qmin, qmin + (num_q - 1) * deltaq, num_q)
-        matrix_cc = hdul[0].data
-        qmed = np.max(matrix_cc, axis=0)  # perfil
+    larch = makelist(lista)
+    for i, img in enumerate(larch):
+        print(f"Procesando {i+1}/{len(larch)}: {img}")
+        with fits.open(img, mode='update', verify='ignore') as hdul:
+            if i == 0:
+                qmin = hdul[0].header['Q0']
+                qmax = hdul[0].header['Q1']
+                deltaq = hdul[0].header['DELTA_Q']
+                num_q = int(np.ceil((qmax - qmin) / deltaq)) + 1
+                q_array = np.linspace(qmin, qmin + (num_q - 1) * deltaq, num_q)
+            matrix_cc = hdul[0].data
+            qmed = np.max(matrix_cc, axis=0)  # perfil
 
         # 1. Estimar el continuo (fondo)
         fondo = continuum(q_array, qmed, order=ordcon, type='fit', lo=3, hi=3, nit=5, graph=False)
@@ -1024,6 +852,10 @@ def qfitg(img, ordcon=1, output_csv="output.csv", graph=True, save=True):
             plt.title(f'File: {img}\nPeak={max_val:.4f}, amp_gauss={amp:.4f}, sigma={sigma:.4f}, noise={ruido_std:.4f}')
             plt.legend()
             plt.grid(True, alpha=0.3)
+            plt.show(block=False)
+            print("\nPress Enter to continue to next file...")
+            input()  # Espera a que el usuario presione Enter
+            plt.close()
 
     if save:
         # 7. Escribir CSV
@@ -1036,6 +868,7 @@ def qfitg(img, ordcon=1, output_csv="output.csv", graph=True, save=True):
 
         print(f"Save file")
     return resultados
+
 
 def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, cord=10, reject=True, q=None, vgamma=None, obspha=False, showtit=True):
 
@@ -1220,137 +1053,37 @@ def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, cord=10, reject=True, q=None
         pass
     gc.collect()
 
-def splot(file, xmin=None, xmax=None, ymin=None, ymax=None, scale=1., markpix=False, newfig=True, color='r',wreg=None):
+def splot(file, xmin=None, xmax=None, ymin=None, ymax=None, scale=1., markpix=False, newfig=True, color='r'):
     plt.ion()
-    
-    # Determinar si es una lista de archivos
-    is_list = False
-    file_list = []
-    if isinstance(file, str) and file.startswith('@'):
-        file_list = makelist(file)
-        is_list = True
-    elif isinstance(file, list):
-        file_list = file
-        is_list = True
-    else:
-        # Comportamiento original para un solo archivo
-        w, f = pyasl.read1dFitsSpec(file)
-        if newfig:
-            plt.figure(figsize=[20, 10])
-        if xmin is None:
-            x1 = np.min(w)
-        else:
-            x1 = xmin
-        if xmax is None:
-            x2 = np.max(w)
-        else:
-            x2 = xmax
-        if ymin is None:
-            y1 = np.min(f) * scale
-        else:
-            y1 = ymin
-        if ymax is None:
-            y2 = np.max(f) * scale
-        else:
-            y2 = ymax
-
-        #graficar región wreg        
-        if wreg != None:
-            reg1 = wreg.split(',')
-            w_reg_list = []
-            f_reg_list = []
-            for i,wband in enumerate(reg1):
-                wlo = float(reg1[i].split('-')[0])
-                whi = float(reg1[i].split('-')[1])
-                regmask = (w >= wlo) & (w <= whi)
-                if np.any(regmask):
-                    w_reg_list.append(w[regmask])
-                    f_reg_list.append(f[regmask] * scale)
-                    # NaN para separar regiones
-                    w_reg_list.append(np.array([np.nan]))
-                    f_reg_list.append(np.array([np.nan]))
-            if w_reg_list:
-                w_reg = np.concatenate(w_reg_list)
-                f_reg = np.concatenate(f_reg_list)
-                plt.plot(w_reg, f_reg, color='black', linewidth=1, ls='--', zorder=3)
-
-        plt.axis([x1, x2, y1, y2])
-        plt.ylabel('Flux')
-        plt.xlabel('Wavelength')
-        plt.title(file)
-        plt.plot(w, f * scale, marker='', color=color, linewidth=1)
-        if markpix:
-            plt.plot(w, f * scale, marker='.', markersize=2, color='black', linestyle='')
-        plt.tight_layout()
-        plt.show()
-        return w, f
-
-    # Caso múltiple: graficar todos los espectros en una misma ventana
-    if not file_list:
-        print("No se encontraron archivos para graficar.")
-        return None, None
-    
-    # Cargar todos los espectros con manejo de errores
-    spectra = []
-    for fname in file_list:
-        try:
-            w, f = pyasl.read1dFitsSpec(fname)
-            spectra.append((w, f, fname))
-        except Exception as e:
-            print(f"Error al leer {fname}: {e}")
-    
-    if not spectra:
-        print("No se pudo leer ningún archivo.")
-        return None, None
-
-    # Calcular límites globales si no se proporcionaron
-    all_w = np.concatenate([w for w, _, _ in spectra])
-    all_f = np.concatenate([f for _, f, _ in spectra])
+    w, f = pyasl.read1dFitsSpec(file)
+    if newfig:
+        plt.figure(figsize=[20, 10])
     if xmin is None:
-        x1 = np.min(all_w)
+        x1 = np.min(w)
     else:
         x1 = xmin
     if xmax is None:
-        x2 = np.max(all_w)
+        x2 = np.max(w)
     else:
         x2 = xmax
     if ymin is None:
-        y1 = np.min(all_f) * scale
+        y1 = np.min(f) * scale
     else:
         y1 = ymin
     if ymax is None:
-        y2 = np.max(all_f) * scale
+        y2 = np.max(f) * scale
     else:
-        y2 = ymax
-
-    # Crear figura si es necesario
-    if newfig:
-        plt.figure(figsize=[20, 10])
-    else:
-        if not plt.get_fignums():
-            plt.figure(figsize=[20, 10])
-
-    # Obtener ciclo de colores por defecto de matplotlib
-    prop_cycle = plt.rcParams['axes.prop_cycle']
-    colors = prop_cycle.by_key()['color']
-
-    # Graficar cada espectro con un color diferente
-    for idx, (w, f, fname) in enumerate(spectra):
-        color_idx = idx % len(colors)
-        plt.plot(w, f * scale, marker='', color=colors[color_idx], linewidth=1, label=fname)
-        if markpix:
-            plt.plot(w, f * scale, marker='.', markersize=2, color='black', linestyle='')
-
+        y2 = ymax * scale
     plt.axis([x1, x2, y1, y2])
     plt.ylabel('Flux')
     plt.xlabel('Wavelength')
-    plt.title('Multiple spectra')
-    plt.legend(loc='best')
+    plt.title(file)
+    plt.plot(w, f * scale, marker='', color=color, linewidth=1)
+    if markpix:
+        plt.plot(w, f * scale, marker='.', markersize=2, color='black', linestyle='')
     plt.tight_layout()
     plt.show()
-    
-    # Opcional: retornar la lista de espectros para su uso posterior
-    return spectra
+    return w, f
 
 def setrvs(lis, ta='templateA', tb=None, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900',
            fitcont=True, interac=True):
@@ -1646,7 +1379,7 @@ def uniform(lis, wmin=None, wmax=None, keyrv='VRA', interac=True, suffix='_unifo
 
 
 def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.01,
-          wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900', nproc=None, cpulimit=0.9, interac=True):
+          wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900', nproc=None, cpulimit=0.9):
     plt.close('all')
     gc.collect()
     
@@ -1784,8 +1517,8 @@ def vgrid(lis, lit, svmin=-1, svmax=1, step=0.1, qmin=0.02, qmax=0.5, deltaq=0.0
                 os.remove('A' + aux1 + '.fits')
         gc.collect()
         plt.close('all')
-    if interac:
-        vexplore(outfolder)
+    
+    vexplore(outfolder)
     bar0.finish()
     gc.collect()
     plt.close('all')
