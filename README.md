@@ -4,14 +4,14 @@ The Binary Spectral Disentangling (**BiSpeD**) is a PYTHON library for astronomy
 
  ## Introduction
 
-The BiSpeD (v1.7) code allows to estimate the mass ratio among companions (*q*-value). The spectral features of primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. Eventually, the BiSpeD code works through specific functions (tasks) with them aims. In *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented.
+The BiSpeD (v1.8) code allows to estimate the mass ratio among companions (*q*-value). The spectral features of primary component (*S<sub>A</sub>*) are removed from observed spectra (*S<sub>obs</sub>*), and for each possible *q*-values defined by the user, a residual spectrum associated with secondary companion is estimated (*S<sub>B</sub>*). Finally, the code compares each *S<sub>B</sub>* spectrum with a synthetic templates catalogue to find the best match for mass ratio *q* and secondary effective temperature *T<sub>eff</sub>*. Eventually, the BiSpeD code works through specific functions (tasks) with them aims. In *Main Functions* section, the main functions of BiSpeD with mandatory and optional arguments are presented.
 
 ## Installation
 
 BiSpeD is distributed on PyPI as a universal wheel and is available on Linux/macOS and Windows and supports Python 3.12.
 
 ```bash
-pip install git+https://github.com/israelmarti/bisped@v1.7
+pip install git+https://github.com/israelmarti/bisped@v1.8
 ```
 For optimized interactive useful run from [IPython](https://ipython.org/install.html).
 
