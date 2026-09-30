@@ -930,25 +930,22 @@ def onecomp(img, lit, wreg='4000-4090,4110-4320,4360-4850,4875-5290,5350-5900'):
     plt.xlabel("Temp. [1000 K]", fontsize=9)
     plt.plot(vector_t, matrix_cc, marker='', ls='-', color='red')# Usar archivos temporales para evitar conflictos
 
-def qfitg(lista, ordcon=1, output_csv="output.csv", graph=True, save=True):
+def qfitg(img, ordcon=1, output_csv="output.csv", graph=True, save=True):
     """
     Procesa archivos FITS, ajusta gaussiana al perfil qmed (máximo a lo largo del eje Y)
     usando continuum para el fondo y Gauss para el pico.
     Guarda resultados en CSV y muestra gráficas interactivas.
     """
+    plt.ion()
     resultados = []
-    larch = makelist(lista)
-    for i, img in enumerate(larch):
-        print(f"Procesando {i+1}/{len(larch)}: {img}")
-        with fits.open(img, mode='update', verify='ignore') as hdul:
-            if i == 0:
-                qmin = hdul[0].header['Q0']
-                qmax = hdul[0].header['Q1']
-                deltaq = hdul[0].header['DELTA_Q']
-                num_q = int(np.ceil((qmax - qmin) / deltaq)) + 1
-                q_array = np.linspace(qmin, qmin + (num_q - 1) * deltaq, num_q)
-            matrix_cc = hdul[0].data
-            qmed = np.max(matrix_cc, axis=0)  # perfil
+    with fits.open(img, mode='update', verify='ignore') as hdul:
+        qmin = hdul[0].header['Q0']
+        qmax = hdul[0].header['Q1']
+        deltaq = hdul[0].header['DELTA_Q']
+        num_q = int(np.ceil((qmax - qmin) / deltaq)) + 1
+        q_array = np.linspace(qmin, qmin + (num_q - 1) * deltaq, num_q)
+        matrix_cc = hdul[0].data
+        qmed = np.max(matrix_cc, axis=0)  # perfil
 
         # 1. Estimar el continuo (fondo)
         fondo = continuum(q_array, qmed, order=ordcon, type='fit', lo=3, hi=3, nit=5, graph=False)
@@ -1027,10 +1024,6 @@ def qfitg(lista, ordcon=1, output_csv="output.csv", graph=True, save=True):
             plt.title(f'File: {img}\nPeak={max_val:.4f}, amp_gauss={amp:.4f}, sigma={sigma:.4f}, noise={ruido_std:.4f}')
             plt.legend()
             plt.grid(True, alpha=0.3)
-            plt.show(block=False)
-            print("\nPress Enter to continue to next file...")
-            input()  # Espera a que el usuario presione Enter
-            plt.close()
 
     if save:
         # 7. Escribir CSV
@@ -1043,7 +1036,6 @@ def qfitg(lista, ordcon=1, output_csv="output.csv", graph=True, save=True):
 
         print(f"Save file")
     return resultados
-
 
 def spbina(lis, spa='A', spb='B', nit=5, frat=0.01, cord=10, reject=True, q=None, vgamma=None, obspha=False, showtit=True):
 
