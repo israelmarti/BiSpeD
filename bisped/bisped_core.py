@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Módulo interno de bisped - Contiene todas las funciones auxiliares y de procesamiento (version 1.7)
+Módulo interno de bisped - Contiene todas las funciones auxiliares y de procesamiento (version 1.8)
 No debe ser importado directamente por el usuario
 """
 
@@ -405,6 +405,7 @@ def fxcor(w, f, wt, ft, mask, fitcont=True, rvcent=None, interac=True):
             pb1, pb2 = curve_fit(Gauss, xb, yb - gbase, p0=[np.max(yb - gbase), mb, sigb])
             if nach == 0:
                 mod_rv1 = axisrv.flat[np.abs(axisrv - (xcent - pb1[2]*5)).argmin()]
+                mod_i1 = np.where(axisrv == mod_rv1)[0][0]
                 mod_rv2 = axisrv.flat[np.abs(axisrv - (xcent + pb1[2]*5)).argmin()]
                 mod_i2 = np.where(axisrv == mod_rv2)[0][0]
                 gbase = min(cc1[mod_i1:mod_i2])
