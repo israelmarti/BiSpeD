@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-bisped - Binary Spectral Disentangling (v1.7)
+bisped - Binary Spectral Disentangling (v1.8)
 Interfaz pública del paquete.
 
 Esta es la interfaz que los usuarios deben importar.
@@ -24,12 +24,12 @@ from .bisped_core import (
 )
 
 # Versión del paquete
-__version__ = "1.7"
+__version__ = "1.8"
 
 # Banner de presentación (se muestra SOLO si se ejecuta el script directamente)
 if __name__ == "__main__":
     print("====================================")
-    print("Binary Spectral Disentangling (v1.7)")
+    print("Binary Spectral Disentangling (v1.8)")
     print("====================================\n")
     print("Available functions:\n")
     print("\tfind2c    - Cross-correlation for mass ratio and Teff")
