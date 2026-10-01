@@ -10,6 +10,7 @@ Todas las funciones principales están disponibles aquí.
 
 # Importar funciones públicas desde el núcleo
 from .bisped_core import (
+    cmcrem,
     find2c,
     hselect,
     onecomp,
@@ -32,6 +33,7 @@ if __name__ == "__main__":
     print("Binary Spectral Disentangling (v1.8)")
     print("====================================\n")
     print("Available functions:\n")
+    print("\tcmcrem    - Remove cosmic rays")
     print("\tfind2c    - Cross-correlation for mass ratio and Teff")
     print("\thselect   - Extract FITS header keywords")
     print("\tonecomp   - Compare a spectrum with a template list")
